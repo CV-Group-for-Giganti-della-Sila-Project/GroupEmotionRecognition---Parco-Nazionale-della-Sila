@@ -74,32 +74,45 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 
 | Name | Student ID | Contribution |
 |------|------------|--------------|
-| Gianluca Perrotta | 277091 | PaliGemma 2 — fine-tuning & evaluation, system architecture, AWS infrastructure, Flutter app |
-| Marco Macrì | 276608 | Moondream2 — fine-tuning & evaluation, system architecture, AWS infrastructure, Flutter app |
-| Orazio Ruberto | 276576 | MiniCPM-V — fine-tuning & evaluation, system architecture, AWS infrastructure, Flutter app |
+| Gianluca Perrotta | 277091 | PaliGemma 2 — fine-tuning & evaluation, system architecture, AWS infrastructure, Backend |
+| Marco Macrì | 276608 | Moondream2 — fine-tuning & evaluation, system architecture, AWS infrastructure, Frontend |
+| Orazio Ruberto | 276576 | MiniCPM-V — fine-tuning & evaluation, system architecture, AWS infrastructure, Agent |
 | Asrar Jemal Mohammed | 284598 | Edge integration — Raspberry Pi 4, USB camera, frame capture & transmission to cloud |
 
 ---
 
-## Repository Structure
+## Repository structure
 
-```
-.
-├── README.md
-├── .gitignore
-├── app/
-│   └── back/           # backend
-├── vlm/
-│   ├── paligemma2/     # PaliGemma 2 3B — fine-tuning & evaluation
-│   ├── minicpmv/       # MiniCPM-V 2.6 — fine-tuning & evaluation
-│   └── moondream2/     # Moondream2 — fine-tuning & evaluation
-├── dataset/            # FER+ JSONL builders and dataset split files
-├── edge/               # Raspberry Pi 4 capture script
-├── cloud/              # AWS cloud configuration
-└── docs/               # Project report and documentation
-```
-
----
+├── docs/                          # Project report and documentation
+│   └── GER_Report_final.docx
+└── root/
+    ├── Backend/                   # FastAPI backend (EC2)
+    │   ├── main.py
+    │   ├── database.py
+    │   ├── models.py
+    │   ├── schemas.py
+    │   ├── requirements.txt
+    │   ├── .env.example
+    │   ├── routers/
+    │   │   ├── app_routes.py
+    │   │   └── emonodes.py
+    │   └── services/
+    │       ├── agent.py           # AI Agent proxy
+    │       └── vlm.py             # VLM proxy
+    ├── Edge/                      # Raspberry Pi 4 capture script
+    ├── Frontend/                  # Mobile app (placeholder)
+    └── VLM/
+        ├── Dataset/               # FER+ JSONL builders and dataset split files
+        │   ├── build_jsonl.py
+        │   ├── build_distress_jsonl.py
+        │   ├── train.jsonl
+        │   ├── val.jsonl
+        │   ├── test.jsonl
+        │   ├── test_distress.jsonl
+        │   └── images/            # FER+ images (train / val / test splits)
+        ├── Paligemma 2/           # PaliGemma 2 3B — fine-tuning & evaluation
+        ├── MiniCPM-V/             # MiniCPM-V — fine-tuning & evaluation
+        └── Moondream/             # Moondream2 — fine-tuning & evaluation
 
 ## Dataset — FER+
 
