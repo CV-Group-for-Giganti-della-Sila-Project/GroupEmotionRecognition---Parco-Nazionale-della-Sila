@@ -83,6 +83,7 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 
 ## Repository structure
 
+```
 ├── docs/                          # Project report and documentation
 │   └── GER_Report_final.docx
 └── root/
@@ -113,7 +114,7 @@ The system captures facial images from visitor groups at Parco Nazionale della S
         ├── Paligemma 2/           # PaliGemma 2 3B — fine-tuning & evaluation
         ├── MiniCPM-V/             # MiniCPM-V — fine-tuning & evaluation
         └── Moondream/             # Moondream2 — fine-tuning & evaluation
-
+```
 ---
 
 ## Dataset — FER+
