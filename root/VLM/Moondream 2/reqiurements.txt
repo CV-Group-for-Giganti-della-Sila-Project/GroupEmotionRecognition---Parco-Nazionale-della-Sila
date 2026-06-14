@@ -1,0 +1,9 @@
+torch
+transformers==4.39.3
+accelerate
+huggingface_hub
+pillow
+einops
+timm
+tqdm
+bitsandbytes
