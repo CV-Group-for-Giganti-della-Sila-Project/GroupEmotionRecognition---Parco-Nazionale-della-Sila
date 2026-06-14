@@ -114,6 +114,8 @@ The system captures facial images from visitor groups at Parco Nazionale della S
         ├── MiniCPM-V/             # MiniCPM-V — fine-tuning & evaluation
         └── Moondream/             # Moondream2 — fine-tuning & evaluation
 
+---
+
 ## Dataset — FER+
 
 | Property | Value |
