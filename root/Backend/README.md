@@ -4,11 +4,11 @@ FastAPI backend for the Group Emotion Recognition system. Receives image frames 
 
 ## Endpoints
 
-| Method | Path | Caller | Description |
-|--------|------|--------|-------------|
-| `POST` | `/emonodes/sendmessage` | Raspberry Pi | Submit a frame for emotion classification |
-| `GET` | `/app/data/getbetweendates` | App | Query emotion counts for a node within a time range |
-| `POST` | `/app/askagent` | App | Send a conversation to the chatbot |
+| Method | Path | Caller | Auth | Description |
+|--------|------|--------|------|-------------|
+| `POST` | `/emonodes/sendmessage` | Raspberry Pi | Cognito M2M JWT | Submit a frame for emotion classification |
+| `GET` | `/app/data/getbetweendates` | App | Cognito User JWT | Query emotion percentages for a node within a time range |
+| `POST` | `/app/askagent` | App | Cognito User JWT | Send a message to the chatbot |
 
 ---
 
@@ -44,13 +44,19 @@ The row is written immediately with `emotion = NULL`. The VLM is then called asy
 ```json
 {
   "raspi-01": {
-    "happiness": 2,
-    "neutral": 3,
-    "surprise": 1,
-    "distress": 0
+    "happiness": 40,
+    "neutral": 20,
+    "surprise": 10,
+    "sadness": 5,
+    "fear": 5,
+    "disgust": 5,
+    "contempt": 3,
+    "anger": 2
   }
 }
 ```
+
+Returns emotion percentages (integers, sum ≈ 100) for the 8 emotions: `happiness`, `neutral`, `surprise`, `sadness`, `fear`, `disgust`, `contempt`, `anger`.
 
 ---
 
@@ -60,12 +66,12 @@ The row is written immediately with `emotion = NULL`. The VLM is then called asy
 
 ```json
 {
-  "messages": [
-    {"role": "user", "content": "What emotions were detected today?"}
-  ],
+  "message": "What emotions were detected today?",
   "foto": "optional — base64 string or https:// URL"
 }
 ```
+
+No conversation history — each request is a single independent message.
 
 **Response:**
 
@@ -76,6 +82,19 @@ The row is written immediately with `emotion = NULL`. The VLM is then called asy
 ```
 
 Returns `500` if the language model call fails.
+
+---
+
+## Authentication
+
+All endpoints require a valid AWS Cognito JWT token in the Authorization header:
+
+```
+Authorization: Bearer <token>
+```
+
+- Raspberry Pi nodes authenticate using Cognito Client Credentials (M2M flow) — token obtained via OAuth2 `client_credentials` grant
+- App users authenticate via Cognito User Pool — token obtained after login in the mobile app
 
 ---
 
@@ -107,19 +126,22 @@ cp .env.example .env
 | `DB_NAME` | Database name |
 | `DB_USER` | Database user |
 | `DB_PASSWORD` | Database password |
-| `VLM_URL` | Full URL of the VLM inference endpoint (e.g. `http://localhost:8001/predict`) |
-| `ANTHROPIC_API_KEY` | API key for the language model provider |
+| `VLM_URL` | Full URL of the VLM inference endpoint |
+| `AGENT_URL` | Full URL of the AI agent endpoint |
+| `COGNITO_REGION` | AWS region (eu-west-1) |
+| `COGNITO_USER_POOL_ID` | Cognito User Pool ID |
+| `COGNITO_CLIENT_ID` | Cognito App Client ID |
 
 ### Run
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --host 0.0.0.0 --port 8080
 ```
 
 For development with auto-reload:
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
-Interactive API documentation is available at `http://localhost:8000/docs` once the server is running.
+Interactive API documentation is available at `http://localhost:8080/docs` once the server is running.
