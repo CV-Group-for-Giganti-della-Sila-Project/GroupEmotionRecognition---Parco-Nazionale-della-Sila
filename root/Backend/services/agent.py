@@ -2,19 +2,15 @@ import os
 import httpx
 from dotenv import load_dotenv
 
-from schemas import Message
-
 load_dotenv()
 
 
-async def run_agent(messages: list[Message]) -> str:
+async def run_agent(message: str, foto: str | None = None) -> str:
     agent_url = os.getenv("AGENT_URL")
     if not agent_url:
         raise RuntimeError("AGENT_URL not configured")
 
-    payload = {
-        "messages": [{"role": msg.role, "content": msg.content} for msg in messages]
-    }
+    payload = {"message": message, "foto": foto}
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:

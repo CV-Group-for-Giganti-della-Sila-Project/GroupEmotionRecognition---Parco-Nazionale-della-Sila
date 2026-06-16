@@ -7,6 +7,7 @@ from database import get_db
 from models import Detection
 from schemas import AskAgentRequest, AskAgentResponse
 from services.agent import run_agent
+from auth import verify_app_token
 
 router = APIRouter(prefix="/app", tags=["app"])
 
@@ -21,6 +22,7 @@ async def get_between_dates(
     start: int = Query(...),
     end: int = Query(...),
     nodename: str = Query(...),
+    _token: dict = Depends(verify_app_token),
 ) -> dict:
     result = await db.execute(
         select(Detection).where(
@@ -46,9 +48,12 @@ async def get_between_dates(
 
 
 @router.post("/askagent", response_model=AskAgentResponse)
-async def ask_agent(payload: AskAgentRequest) -> AskAgentResponse:
+async def ask_agent(
+    payload: AskAgentRequest,
+    _token: dict = Depends(verify_app_token),
+) -> AskAgentResponse:
     try:
-        reply = await run_agent(payload.messages)
+        reply = await run_agent(payload.message, payload.foto)
         return AskAgentResponse(response=reply)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

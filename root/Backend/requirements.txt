@@ -7,3 +7,5 @@ python-dotenv
 httpx
 anthropic
 python-multipart
+PyJWT[crypto]
+requests

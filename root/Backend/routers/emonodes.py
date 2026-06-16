@@ -5,6 +5,7 @@ from typing import Annotated
 from database import get_db
 from models import Detection
 from services.vlm import classify_emotion
+from auth import verify_node_token
 
 router = APIRouter(prefix="/emonodes", tags=["emonodes"])
 
@@ -18,6 +19,7 @@ async def send_message(
     node_name: str = Form(...),
     num_persone: int = Form(...),
     timestamp: int = Form(...),
+    _token: dict = Depends(verify_node_token),
 ) -> Response:
     """Receive a frame from a Raspberry Pi node, store it, and update it with the VLM emotion result."""
     image_bytes = await foto.read()
