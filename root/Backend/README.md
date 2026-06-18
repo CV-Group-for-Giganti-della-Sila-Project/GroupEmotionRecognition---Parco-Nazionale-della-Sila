@@ -105,6 +105,15 @@ Authorization: Bearer <token>
 - Python 3.11+
 - MySQL running on `localhost:3306` with the `emotion_db` database and `detections` table already provisioned
 
+### Create virtual environment
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Then install dependencies:
+
 ### Install dependencies
 
 ```bash
