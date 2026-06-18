@@ -53,6 +53,7 @@ async def ask_agent(
     _token: dict = Depends(verify_app_token),
 ) -> AskAgentResponse:
     try:
-        return AskAgentResponse(response="Ciao, sono l'agente!")
+        reply = await run_agent(payload.message, payload.foto)
+        return AskAgentResponse(response=reply)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

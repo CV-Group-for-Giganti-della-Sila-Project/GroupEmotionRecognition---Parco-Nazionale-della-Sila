@@ -9,3 +9,5 @@ anthropic
 python-multipart
 PyJWT[crypto]
 requests
+langchain-ollama
+mysql-connector-python
