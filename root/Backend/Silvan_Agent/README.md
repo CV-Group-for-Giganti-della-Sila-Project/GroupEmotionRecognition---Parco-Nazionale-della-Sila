@@ -34,16 +34,15 @@ mysql -u root -p silvan < schema.sql
 Edit the `.env` with your MySQL credentials, table name, model tag, and timezone.
 For example: 
 
-'''
-  MYSQL_HOST=localhost
-  MYSQL_PORT=3306
-  MYSQL_USER=agent
-  MYSQL_PASSWORD=agent_password
-  MYSQL_DATABASE=silvan
-  MYSQL_TABLE=node_observations
-  OLLAMA_MODEL=llama3.2
-  AGENT_TIMEZONE=Europe/Rome
-'''
+
+- MYSQL_HOST=localhost
+- MYSQL_PORT=3306
+- MYSQL_USER=agent
+- MYSQL_PASSWORD=agent_password
+- MYSQL_DATABASE=silvan
+- MYSQL_TABLE=node_observations
+- OLLAMA_MODEL=llama3.2
+- AGENT_TIMEZONE=Europe/Rome
 
 ## JSON Contract
 
