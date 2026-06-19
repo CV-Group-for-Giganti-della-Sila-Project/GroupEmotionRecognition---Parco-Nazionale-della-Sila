@@ -138,3 +138,152 @@ python evaluate_VLM.py \
   --target_schema group \
   --torch_dtype float16
 ```
+
+
+
+
+
+
+
+
+# Model Queue Service
+
+`model_queue_service.py` is a standalone helper module for FastAPI apps that need
+to run Moondream inference on base64 images.
+
+It loads the model once at application startup, then accepts requests from two
+separate endpoint queues:
+
+- `endpoint_one`
+- `endpoint_two`
+
+Both queues share the same model instance. A single priority worker chooses the
+next image to process, so the model is not called concurrently from multiple
+tasks. By default, endpoint 2 has higher priority and can process up to 3 jobs
+before endpoint 1 gets a turn when both queues are busy.
+
+## Main Functions
+
+- `startup_model_service(config)`: loads the model and starts the queue worker.
+- `shutdown_model_service()`: stops the worker during FastAPI shutdown.
+- `predict_endpoint_one(image_base64)`: sends an image to endpoint 1's queue.
+- `predict_endpoint_two(image_base64)`: sends an image to endpoint 2's queue.
+- `get_model_service().queue_sizes()`: returns the current queue sizes.
+
+## FastAPI Example
+
+```python
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+from model_queue_service import (
+    ModelServiceConfig,
+    get_model_service,
+    predict_endpoint_one,
+    predict_endpoint_two,
+    shutdown_model_service,
+    startup_model_service,
+)
+
+
+class ImageRequest(BaseModel):
+    image_base64: str
+
+
+app = FastAPI()
+
+
+@app.on_event("startup")
+async def startup():
+    await startup_model_service(
+        ModelServiceConfig(
+            model_dir="./moondream-ferplus-emotion-primary-full",
+            base_model_dir="./moondream2-base",
+            endpoint_one_schema="primary",
+            endpoint_two_schema="primary",
+            endpoint_two_priority_weight=3,
+            device="auto",
+            torch_dtype="auto",
+        )
+    )
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await shutdown_model_service()
+
+
+@app.post("/endpoint-one")
+async def endpoint_one(payload: ImageRequest):
+    return await predict_endpoint_one(payload.image_base64)
+
+
+@app.post("/endpoint-two")
+async def endpoint_two(payload: ImageRequest):
+    return await predict_endpoint_two(payload.image_base64)
+
+
+@app.get("/queues")
+async def queues():
+    return get_model_service().queue_sizes()
+```
+
+## Priority Behavior
+
+The priority is controlled by `endpoint_two_priority_weight`.
+
+With the default value:
+
+```python
+endpoint_two_priority_weight=3
+```
+
+and both queues full, processing is roughly:
+
+```text
+endpoint_two
+endpoint_two
+endpoint_two
+endpoint_one
+endpoint_two
+endpoint_two
+endpoint_two
+endpoint_one
+```
+
+Increase the value if endpoint 2 should be favored more strongly. Set it to `1`
+for near round-robin behavior.
+
+## Expected Request Body
+
+Each endpoint expects a JSON body containing a base64 image:
+
+```json
+{
+  "image_base64": "..."
+}
+```
+
+The image can be plain base64 or a data URL such as:
+
+```text
+data:image/png;base64,...
+```
+
+## Response Shape
+
+Each prediction returns a dictionary like:
+
+```json
+{
+  "predicted_emotion": "happiness",
+  "parse_status": "valid_label",
+  "raw_model_output": "{\"primary_emotion\":\"happiness\"}",
+  "parsed_model_output": {"primary_emotion": "happiness"},
+  "model_source": "./moondream-ferplus-emotion-primary-full",
+  "queue": "endpoint_two",
+  "queue_wait_seconds": 0.003214,
+  "processing_seconds": 1.48291
+}
+```
+
