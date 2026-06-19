@@ -1,10 +1,15 @@
+import base64
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../VLM/Moondream 2'))
+
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 
 from database import get_db
 from models import Detection
-from services.vlm import classify_emotion
+from model_queue_service import predict_endpoint_one
 from auth import verify_node_token
 
 router = APIRouter(prefix="/emonodes", tags=["emonodes"])
@@ -34,7 +39,9 @@ async def send_message(
     await db.commit()
     await db.refresh(detection)
 
-    emotion = await classify_emotion(image_bytes, foto.filename or "image.jpg")
+    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+    result = await predict_endpoint_one(image_base64)
+    emotion = result.get("predicted_emotion")
 
     if emotion is not None:
         detection.emotion = emotion
