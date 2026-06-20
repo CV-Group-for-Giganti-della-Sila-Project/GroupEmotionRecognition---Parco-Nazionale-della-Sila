@@ -26,26 +26,61 @@ The fine-tuning process utilized the following configuration:
 ## Results
 
 ### Run 1: 8-Class Evaluation (Group Schema)
-**Config:** 1 Epoch, 1/3 Sample Fraction, Learning Rate 1e-5.
+
+**Status:** completed  
+**Model directory:** `./moondream-ferplus-emotion-full-fp16`  
+**Target schema:** `group`  
+**Test set:** `/workspace/datasets/jsonl/test.jsonl`  
+**Created at:** `2026-06-07T11:19:31.750701+00:00`
+
+**Config:** 1 Epoch, 1/3 Sample Fraction, Learning Rate 1e-5, `max_new_tokens=96`, `temperature=0.0`.
 
 | Metric | Value |
 |--------|-------|
-| Accuracy | 82.17% |
 | Samples | 3,573 |
-| Invalid predictions | 0.00% |
+| Correct predictions | 2,936 |
+| Incorrect predictions | 637 |
+| Accuracy | 82.17% |
+| Balanced accuracy | 62.06% |
+| Macro precision | 66.98% |
+| Macro recall | 62.06% |
+| Macro F1 | 63.24% |
+| Weighted precision | 81.77% |
+| Weighted recall | 82.17% |
+| Weighted F1 | 81.65% |
+| Micro precision | 82.17% |
+| Micro recall | 82.17% |
+| Micro F1 | 82.17% |
+| Invalid predictions | 0 |
+| Invalid prediction rate | 0.00% |
 
-**Per-Class Accuracy:**
+**Prediction parsing:** all 3,573 predictions were parsed as valid labels.
 
-| Emotion | Accuracy |
-|---------|----------|
-| happiness | 91.82% |
-| neutral | 88.15% |
-| surprise | 84.89% |
-| anger | 81.68% |
-| sadness | 60.36% |
-| disgust | 33.33% |
-| fear | 29.59% |
-| contempt | 26.67% |
+**Per-Class Metrics:**
+
+| Emotion | Precision | Recall | F1 | Support |
+|---------|-----------|--------|----|---------|
+| neutral | 83.68% | 88.15% | 85.86% | 1,274 |
+| happiness | 92.22% | 91.82% | 92.02% | 929 |
+| surprise | 77.80% | 84.89% | 81.19% | 450 |
+| sadness | 74.04% | 60.36% | 66.50% | 449 |
+| anger | 73.88% | 81.68% | 77.58% | 322 |
+| disgust | 25.00% | 33.33% | 28.57% | 21 |
+| fear | 59.18% | 29.59% | 39.46% | 98 |
+| contempt | 50.00% | 26.67% | 34.78% | 30 |
+
+**Confusion Matrix:** rows are true labels, columns are predicted labels.
+
+| True \ Predicted | neutral | happiness | surprise | sadness | anger | disgust | fear | contempt |
+|------------------|---------|-----------|----------|---------|-------|---------|------|----------|
+| neutral | 1123 | 26 | 28 | 71 | 15 | 4 | 4 | 3 |
+| happiness | 26 | 853 | 22 | 3 | 20 | 2 | 1 | 2 |
+| surprise | 28 | 14 | 382 | 2 | 14 | 0 | 9 | 1 |
+| sadness | 117 | 15 | 7 | 271 | 26 | 7 | 5 | 1 |
+| anger | 25 | 9 | 12 | 7 | 263 | 5 | 1 | 0 |
+| disgust | 1 | 1 | 1 | 2 | 8 | 7 | 0 | 1 |
+| fear | 12 | 6 | 38 | 6 | 7 | 0 | 29 | 0 |
+| contempt | 10 | 1 | 1 | 4 | 3 | 3 | 0 | 8 |
 
 ### Run 2: 8-Class Evaluation (Primary Schema - Stopped Early)
 **Config:** 2 Epochs (Partial), 1.0 Sample Fraction, Learning Rate 5e-6.
@@ -286,4 +321,3 @@ Each prediction returns a dictionary like:
   "processing_seconds": 1.48291
 }
 ```
-
