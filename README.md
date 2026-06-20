@@ -87,28 +87,29 @@ The system captures facial images from visitor groups at Parco Nazionale della S
     │   ├── database.py
     │   ├── models.py
     │   ├── schemas.py
+    │   ├── auth.py
+    │   ├── predict_folder.py      # VLM helper module
     │   ├── requirements.txt
     │   ├── .env.example
     │   ├── routers/
     │   │   ├── app_routes.py
     │   │   └── emonodes.py
-    │   └── services/
-    │       ├── agent.py           # AI Agent proxy
-    │       └── vlm.py             # VLM proxy
+    │   ├── services/
+    │   │   ├── agent.py           # AI Agent integration
+    │   │   └── vlm.py             # VLM queue integration
+    │   └── Silvan_Agent/          # AI Agent (text-to-SQL, Ollama)
     ├── Edge/                      # Raspberry Pi 4 capture script
-    ├── Frontend/                  # Mobile app (placeholder)
+    ├── Frontend/                  # Flutter mobile app
     └── VLM/
         ├── Dataset/               # FER+ JSONL builders and dataset split files
-        │   ├── build_jsonl.py
-        │   ├── build_distress_jsonl.py
-        │   ├── train.jsonl
-        │   ├── val.jsonl
-        │   ├── test.jsonl
-        │   ├── test_distress.jsonl
-        │   └── images/            # FER+ images (train / val / test splits)
-        ├── Paligemma 2/           # PaliGemma 2 3B — fine-tuning & evaluation
+        ├── Paligemma 2/           # PaliGemma 2 3B — fine-tuning & evaluation & queue service (imported from Moondream 2)
         ├── MiniCPM-V/             # MiniCPM-V — fine-tuning & evaluation
-        └── Moondream/             # Moondream2 — fine-tuning & evaluation
+        └── Moondream 2/           # Moondream2 — fine-tuning, evaluation & queue service
+            ├── finetune.py
+            ├── evaluate_VLM.py
+            ├── folder_evaluation.py
+            ├── model_queue_service.py
+            └── sumarize_predictions.py
 ```
 ---
 
@@ -134,8 +135,8 @@ JSONL files in `dataset/` map each image path (as it appears on the EC2 instance
 | Model | Strategy | Accuracy | Macro F1 | Invalid % |
 |-------|----------|----------|----------|-----------|
 | **PaliGemma 2 3B** | Base (no fine-tuning) + simple prompt | **0.691** | **0.436** | **0.00%** |
+| **Moondream2** | Fine-tuning (1 epoch, 1/3 data, frozen vision encoder) | **0.822** | — | **0.00%** |
 | MiniCPM-V 2.6 | QLoRA fine-tuning (1 epoch, 1/3 data) | — | — | — |
-| Moondream2 | — | — | — | — |
 
 ### PaliGemma 2 — 4-Class Distress Evaluation
 
@@ -153,6 +154,21 @@ Grouping sadness / anger / disgust / fear / contempt into a single `distress` cl
 | neutral | 0.665 |
 | distress | 0.621 |
 | surprise | 0.598 |
+
+### Moondream2 — Per-Class Accuracy (8 classes, after fine-tuning)
+
+Config: 1 epoch, 1/3 sample fraction, learning rate 1e-5. Vision encoder frozen, text model fine-tuned.
+
+| Emotion | Accuracy | Comment |
+|---------|----------|---------|
+| happiness | 91.82% | Excellent |
+| neutral | 88.15% | Excellent |
+| surprise | 84.89% | Good |
+| anger | 81.68% | Good |
+| sadness | 60.36% | Moderate |
+| disgust | 33.33% | Weak |
+| fear | 29.59% | Weak |
+| contempt | 26.67% | Very weak |
 
 ### MiniCPM-V 2.6 — Per-Class F1 (8 classes, after QLoRA fine-tuning)
 
