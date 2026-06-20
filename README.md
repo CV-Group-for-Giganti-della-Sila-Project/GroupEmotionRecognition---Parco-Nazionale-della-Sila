@@ -72,7 +72,7 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 | Gianluca Perrotta | 277091 | PaliGemma 2 — fine-tuning & evaluation, system architecture, AWS infrastructure, Backend |
 | Marco Macrì | 276608 | Moondream2 — fine-tuning & evaluation, system architecture, AWS infrastructure, Frontend |
 | Orazio Ruberto | 276576 | MiniCPM-V — fine-tuning & evaluation, system architecture, AWS infrastructure, Agent |
-| Asrar Jemal Mohammed | 284598 | Edge integration — Raspberry Pi 4, USB camera, frame capture & transmission to cloud |
+| Asrar Jemal Mohammed | 284598 | Edge integration — Raspberry Pi 5, GoPro camera, face-detection-triggered frame capture \& transmission to cloud |
 
 ---
 
