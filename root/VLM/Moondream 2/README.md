@@ -5,7 +5,7 @@
 **Dataset:** FER+ (8-class standard)
 
 ---
-
+ 
 ## Approach
 
 Moondream 2 is a small, efficient Vision-Language Model designed to run on resource-constrained devices. It features a vision encoder and a language model (Phhi-2 based) that can be fine-tuned for specific tasks. 
