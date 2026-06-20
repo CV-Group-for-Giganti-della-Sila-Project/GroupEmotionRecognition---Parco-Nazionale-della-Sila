@@ -22,48 +22,43 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 │  │  USB camera (capture + compress)      │                                           │
 │  └───────────────────────────────────────┘                                           │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-        │  JPEG frame (HTTPS POST)                                      ▲  200 OK
-        ▼                                                               │
+        │  JPEG frame (HTTPS POST) + Cognito M2M token          ▲  200 OK
+        ▼                                                        │
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
 │  CLOUD (AWS eu-west-1)                                                               │
 │                                                                                      │
 │  ┌─────────────────────────────────────────────────────────────────────────────┐     │
-│  │  API Gateway + Cognito auth                                                 │     │
-│  └─────────────────────────────────────────────────────────────────────────────┘     │
-│                               │  route + authenticate                                │
-│                               ▼                                                      │
-│  ┌─────────────────────────────────────────────────────────────────────────────┐     │
-│  │  EC2 g4dn.xlarge                                                            │     │
+│  │  EC2 g4dn.xlarge (NVIDIA Tesla T4) — reachable via Tailscale VPN            │     │
 │  │                                                                             │     │
-│  │  ┌─────────────────────────┐              ┌────────────────────────────┐    │     │
-│  │  │  FastAPI (port 8000)     │─classify──►  │  VLM server (port 8001)    │    │     │
-│  │  │                          │◄─emotion ─── │                            │    │     │
-│  │  │                          │              └────────────────────────────┘    │     │
-│  │  │                          │                                                │     │
-│  │  │                          │─fwd chat──►  ┌────────────────────────────┐    │     │
-│  │  │                          │◄─response─── │  AI Agent (text-to-SQL)    │    │     │
-│  │  │                          │              └──────────────┬─────────────┘    │     │
-│  │  └─────────────┬────────────┘                             │  SQL queries     │     │
-│  │                │  save result                              │                 │     │
-│  │                └──────────────────┐  ┌────────────────────┘                 │     │
-│  │                                   ▼  ▼                                      │     │
-│  │                      ┌──────────────────────────┐                           │     │
-│  │                      │  MySQL (localhost:3306)   │                           │     │
-│  │                      └──────────────────────────┘                           │     │
-│  │                                                                              │     │
-│  │  EC2 ── pulls scripts, datasets, model artefacts ──► ┌──────────────────┐   │     │
-│  │                                                       │  S3              │   │     │
-│  │                                                       └──────────────────┘   │     │
+│  │  ┌───────────────────────┐    queue (normal)    ┌──────────────────────┐   │     │
+│  │  │  FastAPI (port 8080)  │─────────────────────►│  VLM Moondream       │   │     │
+│  │  │                       │◄──── emotion ─────── │  (predict_endpoint_  │   │     │
+│  │  │                       │                      │   one / two)         │   │     │
+│  │  │                       │    queue (priority)  └──────────────────────┘   │     │
+│  │  │                       │─────────────────────►  (app photo analysis)     │     │
+│  │  │                       │                                                 │     │
+│  │  │                       │─── forward message ─►┌──────────────────────┐   │     │
+│  │  │                       │◄─── NL response ──── │  AI Agent            │   │     │
+│  │  │                       │                      │  (Silvan + llama3.2) │   │     │
+│  │  └──────────┬────────────┘                      └──────────┬───────────┘   │     │
+│  │             │ save result                                   │ SQL queries   │     │
+│  │             └──────────────────┐  ┌────────────────────────┘               │     │
+│  │                                ▼  ▼                                        │     │
+│  │                   ┌──────────────────────────┐                             │     │
+│  │                   │  MySQL (localhost:3306)   │                             │     │
+│  │                   └──────────────────────────┘                             │     │
+│  │                                                                             │     │
+│  │  EC2 ── pulls scripts, datasets, model artefacts ──► S3                    │     │
 │  └─────────────────────────────────────────────────────────────────────────────┘     │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-        │  data + agent replies                                         ▲  queries + chat
-        ▼                                                               │
+        │  data + agent replies                          ▲  queries + chat + photos
+        ▼                                               │
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
 │  CLIENT                                                                              │
 │                                                                                      │
 │  ┌───────────────────────────────────────┐                                           │
 │  │  Flutter Mobile App                   │                                           │
-│  │  (group emotion dashboard)            │                                           │
+│  │  (group emotion dashboard + chat)     │                                           │
 │  └───────────────────────────────────────┘                                           │
 └──────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -174,6 +169,55 @@ Grouping sadness / anger / disgust / fear / contempt into a single `distress` cl
 
 ---
 
+## API Endpoints
+
+| Method | Path | Caller | Auth | Description |
+|--------|------|--------|------|-------------|
+| `POST` | `/emonodes/sendmessage` | Raspberry Pi | Cognito M2M JWT | Submit a frame for emotion classification |
+| `GET` | `/app/data/getbetweendates` | App | Cognito User JWT | Query emotion percentages for a node within a time range |
+| `POST` | `/app/analyzephoto` | App | Cognito User JWT | Send a photo for immediate emotion classification (high priority queue) |
+| `POST` | `/app/askagent` | App | Cognito User JWT | Send a natural language question to the AI agent |
+
+### POST `/emonodes/sendmessage`
+
+- Body fields: `foto` (file), `node_name` (string), `num_persone` (integer), `timestamp` (unix integer)
+- The frame is queued via `predict_endpoint_one` (normal priority) and processed by the VLM Moondream model
+- Response: `200 OK` (empty body)
+
+### GET `/app/data/getbetweendates`
+
+Returns emotion percentages (integers, sum ≈ 100) for the 8 emotions: `happiness`, `neutral`, `surprise`, `sadness`, `fear`, `disgust`, `contempt`, `anger`.
+
+### POST `/app/analyzephoto`
+
+- Body: `{"image_base64": "..."}` — base64 encoded image (JPG, PNG, JPEG supported)
+- The image is queued via `predict_endpoint_two` (high priority, processed before Raspberry frames when both queues are busy)
+- Response: `{"emotion": "happiness"}`
+
+### POST `/app/askagent`
+
+- Body: `{"message": "What emotions were detected on Tree1?"}`
+- Single message per request — no conversation history
+- The AI agent (Silvan + llama3.2 via Ollama) builds a SQL query, queries MySQL, and returns a natural language response
+- Response: `{"response": "Here are the emotions detected on Tree1..."}`
+
+---
+
+## Authentication
+
+All endpoints require a valid AWS Cognito JWT token in the Authorization header:
+
+```
+Authorization: Bearer <token>
+```
+
+- Raspberry Pi nodes authenticate using Cognito Client Credentials (M2M flow)
+- App users authenticate via Cognito User Pool (email/password)
+- Both client types connect to the EC2 instance via Tailscale VPN
+- FastAPI validates tokens directly — no API Gateway involved
+
+---
+
 ## AWS Infrastructure
 
 | Component | Specification |
@@ -182,9 +226,11 @@ Grouping sadness / anger / disgust / fear / contempt into a single `distress` cl
 | GPU | NVIDIA Tesla T4 — 16 GB VRAM |
 | Storage | EBS gp3 + S3 (scripts, datasets, model artefacts) |
 | Database | MySQL (on EC2, localhost:3306) |
-| Routing & auth | API Gateway + Cognito |
-| Backend | FastAPI (port 8000) |
-| VLM server | Separate process (port 8001) |
+| Connectivity | Tailscale VPN (replaces API Gateway) |
+| Auth | AWS Cognito (User Pool + M2M Client Credentials) |
+| Backend | FastAPI (port 8080) |
+| VLM | Moondream2 fine-tuned (two priority queues) |
+| AI Agent | Silvan + llama3.2 via Ollama |
 | Region | `eu-west-1` |
 
 ---
@@ -196,6 +242,13 @@ See the model-specific READMEs for full instructions:
 - **PaliGemma 2:** [`vlm/paligemma2/README.md`](vlm/paligemma2/README.md)
 - **MiniCPM-V:** `vlm/minicpmv/`
 - **Moondream2:** `vlm/moondream2/`
+- **Backend:** [`root/Backend/README.md`](root/Backend/README.md) — runs on port `8080`
+
+On startup FastAPI automatically:
+
+- Loads the VLM Moondream model into memory
+- Warms up the AI agent (Ollama) with a dummy request
+- Prints `VLM model service ready.` and `AI agent ready.` when both are operational
 
 For dataset preparation: [`dataset/`](dataset/)
 
