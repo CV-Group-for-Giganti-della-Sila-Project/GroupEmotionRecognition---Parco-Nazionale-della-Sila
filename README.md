@@ -22,7 +22,7 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 │  │  USB camera (capture + compress)      │                                           │
 │  └───────────────────────────────────────┘                                           │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-        │  JPEG frame (HTTPS POST) + Cognito M2M token          ▲  200 OK
+        │  JPEG frame (HTTPS POST) + Cognito M2M token           ▲  200 OK
         ▼                                                        │
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
 │  CLOUD (AWS eu-west-1)                                                               │
@@ -30,28 +30,28 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 │  ┌─────────────────────────────────────────────────────────────────────────────┐     │
 │  │  EC2 g4dn.xlarge (NVIDIA Tesla T4) — reachable via Tailscale VPN            │     │
 │  │                                                                             │     │
-│  │  ┌───────────────────────┐    queue (normal)    ┌──────────────────────┐   │     │
-│  │  │  FastAPI (port 8080)  │─────────────────────►│  VLM Moondream       │   │     │
-│  │  │                       │◄──── emotion ─────── │  (predict_endpoint_  │   │     │
-│  │  │                       │                      │   one / two)         │   │     │
-│  │  │                       │    queue (priority)  └──────────────────────┘   │     │
-│  │  │                       │─────────────────────►  (app photo analysis)     │     │
-│  │  │                       │                                                 │     │
-│  │  │                       │─── forward message ─►┌──────────────────────┐   │     │
-│  │  │                       │◄─── NL response ──── │  AI Agent            │   │     │
-│  │  │                       │                      │  (Silvan + llama3.2) │   │     │
-│  │  └──────────┬────────────┘                      └──────────┬───────────┘   │     │
-│  │             │ save result                                   │ SQL queries   │     │
-│  │             └──────────────────┐  ┌────────────────────────┘               │     │
-│  │                                ▼  ▼                                        │     │
-│  │                   ┌──────────────────────────┐                             │     │
-│  │                   │  MySQL (localhost:3306)   │                             │     │
-│  │                   └──────────────────────────┘                             │     │
+│  │  ┌───────────────────────┐    queue (normal)    ┌──────────────────────┐    │     │
+│  │  │  FastAPI (port 8080)  │─────────────────────►│  VLM Moondream       │    │     │
+│  │  │                       │◄──── emotion ─────── │  (predict_endpoint_  │    │     │
+│  │  │                       │                      │   one / two)         │    │     │
+│  │  │                       │    queue (priority)  └──────────────────────┘    │     │
+│  │  │                       │─────────────────────►  (app photo analysis)      │     │
+│  │  │                       │                                                  │     │
+│  │  │                       │─── forward message ─►┌──────────────────────┐    │     │
+│  │  │                       │◄─── NL response ──── │  AI Agent            │    │     │
+│  │  │                       │                      │  (Silvan + llama3.2) │    │     │
+│  │  └──────────┬────────────┘                      └──────────┬───────────┘    │     │
+│  │             │ save result                                  │ SQL queries    │     │
+│  │             └──────────────────┐  ┌────────────────────────┘                │     │
+│  │                                ▼  ▼                                         │     │
+│  │                   ┌──────────────────────────┐                              │     │
+│  │                   │  MySQL (localhost:3306)  │                              │     │
+│  │                   └──────────────────────────┘                              │     │
 │  │                                                                             │     │
-│  │  EC2 ── pulls scripts, datasets, model artefacts ──► S3                    │     │
+│  │  EC2 ── pulls scripts, datasets, model artefacts ──► S3                     │     │
 │  └─────────────────────────────────────────────────────────────────────────────┘     │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-        │  data + agent replies                          ▲  queries + chat + photos
+        │  data + agent replies                         ▲  queries + chat + photos
         ▼                                               │
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
 │  CLIENT                                                                              │
