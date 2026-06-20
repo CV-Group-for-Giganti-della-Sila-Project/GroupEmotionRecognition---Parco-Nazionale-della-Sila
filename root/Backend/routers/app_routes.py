@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../VLM/Moondream 2'))
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -5,8 +9,9 @@ from typing import Annotated
 
 from database import get_db
 from models import Detection
-from schemas import AskAgentRequest, AskAgentResponse
+from schemas import AskAgentRequest, AskAgentResponse, AnalyzePhotoRequest, AnalyzePhotoResponse
 from services.agent import run_agent
+from model_queue_service import predict_endpoint_two
 from auth import verify_app_token
 
 router = APIRouter(prefix="/app", tags=["app"])
@@ -55,5 +60,17 @@ async def ask_agent(
     try:
         reply = await run_agent(payload.message, payload.foto)
         return AskAgentResponse(response=reply)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("/analyzephoto", response_model=AnalyzePhotoResponse)
+async def analyze_photo(
+    payload: AnalyzePhotoRequest,
+    _token: dict = Depends(verify_app_token),
+) -> AnalyzePhotoResponse:
+    try:
+        result = await predict_endpoint_two(payload.image_base64)
+        return AnalyzePhotoResponse(emotion=result.get("predicted_emotion", "unknown"))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
