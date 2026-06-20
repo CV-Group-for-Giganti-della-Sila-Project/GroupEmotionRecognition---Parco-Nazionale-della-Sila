@@ -18,6 +18,7 @@ async def startup():
     await startup_model_service(
         ModelServiceConfig(
             model_dir=os.getenv("VLM_MODEL_DIR", "/workspace/marco/moondream-ferplus-emotion-full-fp16"),
+            base_model_dir=os.getenv("VLM_BASE_MODEL_DIR", "/workspace/marco/moondream2-base"),
             endpoint_one_schema="primary",
             endpoint_two_schema="primary",
             endpoint_two_priority_weight=3,
