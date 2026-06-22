@@ -102,7 +102,7 @@ Key observations from the 8-class confusion matrix:
 
 ## Qualitative Evaluation
 
-Evaluation on the sample images in the `img/` folder using the base model with simple prompt.
+Evaluation done on the sample images in the `img/` folder using the base model with simple prompt.
 
 | Image | PaliGemma 2 | Image | PaliGemma 2 |
 |-------|-------------|-------|-------------|
