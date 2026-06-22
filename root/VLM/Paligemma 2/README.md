@@ -136,10 +136,10 @@ All evaluation scripts support checkpoint/resume: if interrupted, re-running wit
 
 ## How to Run
 
-### Prerequisites
+## Prerequisites
 
 ```bash
-pip install torch transformers peft bitsandbytes pillow tqdm
+pip install -r requirements.txt
 ```
 
 Requires a CUDA GPU with at least 4 GB VRAM (2.3 GB used in practice at 4-bit).
