@@ -7,7 +7,7 @@ University of Calabria (UNICAL) — A.Y. 2025/2026
 
 ## Project Overview
 
-The system captures facial images from visitor groups at Parco Nazionale della Sila using a Raspberry Pi 4 edge device and classifies the group emotion in real-time through a cloud inference pipeline powered by Vision-Language Models (VLMs). Classified emotions are persisted to MySQL and surfaced through a Flutter mobile application used by park staff.
+The system captures facial images from visitor groups at Parco Nazionale della Sila using a Raspberry Pi 5 edge device and classifies the group emotion in real-time through a cloud inference pipeline powered by Vision-Language Models (VLMs). Classified emotions are persisted to MySQL and surfaced through a Flutter mobile application used by park staff.
 
 ---
 
@@ -18,8 +18,8 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 │  EDGE                                                                                │
 │                                                                                      │
 │  ┌───────────────────────────────────────┐                                           │
-│  │  Raspberry Pi 4                       │                                           │
-│  │  USB camera (capture + compress)      │                                           │
+│  │  Raspberry Pi 5                       │                                           │
+│  │  GoPro camera    (capture + compress) │                                           │
 │  └───────────────────────────────────────┘                                           │
 └──────────────────────────────────────────────────────────────────────────────────────┘
         │  JPEG frame (HTTPS POST) + Cognito M2M token           ▲  200 OK
@@ -98,18 +98,13 @@ The system captures facial images from visitor groups at Parco Nazionale della S
     │   │   ├── agent.py           # AI Agent integration
     │   │   └── vlm.py             # VLM queue integration
     │   └── Silvan_Agent/          # AI Agent (text-to-SQL, Ollama)
-    ├── Edge/                      # Raspberry Pi 4 capture script
+    ├── Edge/                      # Raspberry Pi 5 capture script
     ├── Frontend/                  # Flutter mobile app
     └── VLM/
         ├── Dataset/               # FER+ JSONL builders and dataset split files
-        ├── Paligemma 2/           # PaliGemma 2 3B — fine-tuning & evaluation & queue service (imported from Moondream 2)
-        ├── MiniCPM-V/             # MiniCPM-V — fine-tuning & evaluation
-        └── Moondream 2/           # Moondream2 — fine-tuning, evaluation & queue service
-            ├── finetune.py
-            ├── evaluate_VLM.py
-            ├── folder_evaluation.py
-            ├── model_queue_service.py
-            └── sumarize_predictions.py
+        ├── Paligemma 2/           # PaliGemma 2 3B — fine-tuning & evaluation + project scripts
+        ├── MiniCPM-V/             # MiniCPM-V — fine-tuning & evaluation + project scripts
+        └── Moondream 2/           # Moondream2 — fine-tuning & evaluation + project scripts
 ```
 ---
 
@@ -255,9 +250,9 @@ Authorization: Bearer <token>
 
 See the model-specific READMEs for full instructions:
 
-- **PaliGemma 2:** [`vlm/paligemma2/README.md`](vlm/paligemma2/README.md)
-- **MiniCPM-V:** `vlm/minicpmv/`
-- **Moondream2:** `vlm/moondream2/`
+- **PaliGemma 2:** [`root/VLM/Paligemma2/README.md`](root/VLM/Paligemma2/README.md)
+- **MiniCPM-V:** [`root/VLM/MiniCPM-V/README.md`](root/VLM/MiniCPM-V/README.md)
+- **Moondream2:** [`root/VLM/Moondream2/README.md`](root/VLM/Moondream2/README.md)
 - **Backend:** [`root/Backend/README.md`](root/Backend/README.md) — runs on port `8080`
 
 On startup FastAPI automatically:
