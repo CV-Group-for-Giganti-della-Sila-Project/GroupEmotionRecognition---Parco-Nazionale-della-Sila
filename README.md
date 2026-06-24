@@ -14,53 +14,57 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 ## System Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│  EDGE                                                                                │
-│                                                                                      │
-│  ┌───────────────────────────────────────┐                                           │
-│  │  Raspberry Pi 5                       │                                           │
-│  │  GoPro camera    (capture + compress) │                                           │
-│  └───────────────────────────────────────┘                                           │
-└──────────────────────────────────────────────────────────────────────────────────────┘
-        │  JPEG frame (HTTPS POST) + Cognito M2M token           ▲  200 OK
-        ▼                                                        │
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│  CLOUD (AWS eu-west-1)                                                               │
-│                                                                                      │
-│  ┌─────────────────────────────────────────────────────────────────────────────┐     │
-│  │  EC2 g4dn.xlarge (NVIDIA Tesla T4) — reachable via Tailscale VPN            │     │
-│  │                                                                             │     │
-│  │  ┌───────────────────────┐    queue (normal)    ┌──────────────────────┐    │     │
-│  │  │  FastAPI (port 8080)  │─────────────────────►│  VLM Moondream       │    │     │
-│  │  │                       │◄──── emotion ─────── │  (predict_endpoint_  │    │     │
-│  │  │                       │                      │   one / two)         │    │     │
-│  │  │                       │    queue (priority)  └──────────────────────┘    │     │
-│  │  │                       │─────────────────────►  (app photo analysis)      │     │
-│  │  │                       │                                                  │     │
-│  │  │                       │─── forward message ─►┌──────────────────────┐    │     │
-│  │  │                       │◄─── NL response ──── │  AI Agent            │    │     │
-│  │  │                       │                      │  (Silvan + llama3.2) │    │     │
-│  │  └──────────┬────────────┘                      └──────────┬───────────┘    │     │
-│  │             │ save result                                  │ SQL queries    │     │
-│  │             └──────────────────┐  ┌────────────────────────┘                │     │
-│  │                                ▼  ▼                                         │     │
-│  │                   ┌──────────────────────────┐                              │     │
-│  │                   │  MySQL (localhost:3306)  │                              │     │
-│  │                   └──────────────────────────┘                              │     │
-│  │                                                                             │     │
-│  │  EC2 ── pulls scripts, datasets, model artefacts ──► S3                     │     │
-│  └─────────────────────────────────────────────────────────────────────────────┘     │
-└──────────────────────────────────────────────────────────────────────────────────────┘
-        │  data + agent replies                         ▲  queries + chat + photos
-        ▼                                               │
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│  CLIENT                                                                              │
-│                                                                                      │
-│  ┌───────────────────────────────────────┐                                           │
-│  │  Flutter Mobile App                   │                                           │
-│  │  (group emotion dashboard + chat)     │                                           │
-│  └───────────────────────────────────────┘                                           │
-└──────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│  TAILSCALE VPN — private mesh network                                                   │
+│                                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │  EDGE                                                                            │   │
+│  │                                                                                  │   │
+│  │  ┌───────────────────────────────────────┐                                       │   │
+│  │  │  Raspberry Pi 5                       │                                       │   │
+│  │  │  GoPro camera    (capture + compress) │                                       │   │
+│  │  └───────────────────────────────────────┘                                       │   │
+│  └──────────────────────────────────────────────────────────────────────────────────┘   │
+│          │  JPEG frame (HTTPS POST) + Cognito M2M token           ▲  200 OK             │
+│          ▼                                                        │                     │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │  CLOUD (AWS eu-west-1)                                                           │   │
+│  │                                                                                  │   │
+│  │  ┌───────────────────────────────────────────────────────────────────────────┐   │   │
+│  │  │  EC2 g4dn.xlarge (NVIDIA Tesla T4) — reachable via Tailscale VPN          │   │   │
+│  │  │                                                                           │   │   │
+│  │  │  ┌───────────────────────┐    queue (normal)    ┌──────────────────────┐  │   │   │
+│  │  │  │  FastAPI (port 8080)  │─────────────────────►│  VLM Moondream       │  │   │   │
+│  │  │  │                       │◄──── emotion ─────── │  (predict_endpoint_  │  │   │   │
+│  │  │  │                       │                      │   one / two)         │  │   │   │
+│  │  │  │                       │    queue (priority)  └──────────────────────┘  │   │   │
+│  │  │  │                       │─────────────────────►  (app photo analysis)    │   │   │
+│  │  │  │                       │                                                │   │   │
+│  │  │  │                       │─── forward message ─►┌──────────────────────┐  │   │   │
+│  │  │  │                       │◄─── NL response ──── │  AI Agent            │  │   │   │
+│  │  │  │                       │                      │  (Silvan + llama3.2) │  │   │   │
+│  │  │  └──────────┬────────────┘                      └──────────┬───────────┘  │   │   │
+│  │  │             │ save result                                  │ SQL queries  │   │   │
+│  │  │             └──────────────────┐  ┌────────────────────────┘              │   │   │
+│  │  │                                ▼  ▼                                       │   │   │
+│  │  │                   ┌──────────────────────────┐                            │   │   │
+│  │  │                   │  MySQL (localhost:3306)  │                            │   │   │
+│  │  │                   └──────────────────────────┘                            │   │   │
+│  │  │                                                                           │   │   │
+│  │  │  EC2 ── pulls scripts, datasets, model artefacts ──► S3                   │   │   │
+│  │  └───────────────────────────────────────────────────────────────────────────┘   │   │
+│  └──────────────────────────────────────────────────────────────────────────────────┘   │
+│          │  data + agent replies                         ▲  queries + chat + photos     │
+│          ▼                                               │  + Cognito User JWT          │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │  CLIENT                                                                          │   │
+│  │                                                                                  │   │
+│  │  ┌───────────────────────────────────────┐                                       │   │
+│  │  │  Flutter Mobile App                   │                                       │   │
+│  │  │  (group emotion dashboard + chat)     │                                       │   │
+│  │  └───────────────────────────────────────┘                                       │   │
+│  └──────────────────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -79,8 +83,10 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 ## Repository structure
 
 ```
-├── docs/                          # Project report and documentation
-│   └── GER_Report_final.docx
+├── docs/                          # Project report and documentation + .html
+│   ├── GER_Report_final.docx
+|   └── Architecture diagram/
+|       ├── architecture_diagram.html
 └── root/
     ├── Backend/                   # FastAPI backend (EC2)
     │   ├── main.py
@@ -261,7 +267,7 @@ On startup FastAPI automatically:
 - Warms up the AI agent (Ollama) with a dummy request
 - Prints `VLM model service ready.` and `AI agent ready.` when both are operational
 
-For dataset preparation: [`dataset/`](dataset/)
+For dataset preparation: [`root/VLM/Dataset/`](root/VLM/Dataset/)
 
 ---
 
