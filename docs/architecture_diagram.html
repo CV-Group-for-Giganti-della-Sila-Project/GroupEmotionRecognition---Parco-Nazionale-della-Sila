@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Group Emotion Recognition — System Architecture</title>
+<style>
+  :root{
+    --bg:#1a1a2e;
+    --edge:#e94560;
+    --cloud-accent:#0f3460;
+    --cloud-light:#6fa8dc;
+    --box:#16213e;
+    --client:#533483;
+    --client-light:#b18cd9;
+    --conn:#1a4a3a;
+    --conn-light:#4ade80;
+    --text:#e9e9ef;
+    --muted:#9aa3b2;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  body{
+    font-family:'Segoe UI',Helvetica,Arial,sans-serif;
+    color:var(--text);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 12px 40px;
+  }
+  .mono{font-family:'SF Mono',Consolas,'Courier New',monospace;}
+  #stage{
+    position:relative;
+    width:100%;
+    max-width:1500px;
+  }
+  svg{
+    width:100%;
+    height:auto;
+    display:block;
+    background:var(--bg);
+    border-radius:14px;
+  }
+  .layer-label{
+    font-weight:700;
+    font-size:17px;
+    letter-spacing:2px;
+  }
+  .box-title{
+    font-weight:700;
+    fill:var(--text);
+  }
+  .box-sub{
+    fill:var(--muted);
+  }
+  .box-tag{
+    font-size:12px;
+    fill:#ffd38c;
+  }
+  .node rect, .node path.pill{
+    transition:filter .15s ease, stroke-width .15s ease;
+    cursor:default;
+  }
+  .node:hover rect, .node:hover path.pill{
+    filter:brightness(1.35) drop-shadow(0 0 6px rgba(255,255,255,0.35));
+    stroke-width:2.4;
+  }
+  .arrow{
+    stroke:#d8dce6;
+    fill:none;
+    stroke-width:1.6;
+    transition:opacity .25s ease, stroke-width .25s ease;
+  }
+  .arrow.priority{ stroke-width:2.4; }
+  .arrow.normal{ stroke-dasharray:6 5; }
+  .arrow-label{
+    font-size:12px;
+    fill:var(--muted);
+  }
+  .flow-dim{ opacity:0.12 !important; }
+  #controls{
+    position:absolute;
+    top:14px;
+    right:18px;
+    display:flex;
+    gap:6px;
+    z-index:5;
+  }
+  #controls button{
+    background:#222842;
+    border:1px solid #3a4368;
+    color:var(--text);
+    font-size:11px;
+    padding:6px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  #controls button:hover{ background:#2c335a; }
+  #controls button.active{
+    background:var(--edge);
+    border-color:var(--edge);
+  }
+  #tooltip{
+    position:fixed;
+    max-width:300px;
+    background:#0c0c1a;
+    border:1px solid #3a4368;
+    color:#e9e9ef;
+    font-size:12px;
+    line-height:1.4;
+    padding:9px 12px;
+    border-radius:8px;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .12s ease;
+    z-index:50;
+    box-shadow:0 8px 24px rgba(0,0,0,0.45);
+  }
+  #tooltip.show{ opacity:1; }
+  #caption{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:10px;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="controls">
+    <button data-flow="all" class="active">All flows</button>
+    <button data-flow="normal">Normal priority</button>
+    <button data-flow="priority">High priority</button>
+  </div>
+
+  <svg id="diagram" viewBox="0 0 1500 900" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#d8dce6"/>
+      </marker>
+      <marker id="arrow-dim" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#8a90a0"/>
+      </marker>
+      <symbol id="badge-cognito" viewBox="0 0 20 20">
+        <rect x="0.5" y="0.5" width="19" height="19" rx="4" fill="#1b2438" stroke="#FF9900" stroke-width="1.1"/>
+        <path d="M6,9.5 V8 a4,4 0 0 1 8,0 v1.5" fill="none" stroke="#FF9900" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="5.5" y="9.5" width="9" height="7" rx="1.5" fill="#FF9900"/>
+        <circle cx="10" cy="12.7" r="1" fill="#1b2438"/>
+      </symbol>
+      <symbol id="badge-ec2" viewBox="0 0 20 20">
+        <rect x="0.5" y="0.5" width="19" height="19" rx="4" fill="#1b2438" stroke="#FF9900" stroke-width="1.1"/>
+        <rect x="6" y="6" width="8" height="8" rx="1" fill="none" stroke="#FF9900" stroke-width="1.3"/>
+        <g stroke="#FF9900" stroke-width="1.3" stroke-linecap="round">
+          <line x1="8" y1="3" x2="8" y2="6"/>
+          <line x1="12" y1="3" x2="12" y2="6"/>
+          <line x1="8" y1="14" x2="8" y2="17"/>
+          <line x1="12" y1="14" x2="12" y2="17"/>
+          <line x1="3" y1="8" x2="6" y2="8"/>
+          <line x1="3" y1="12" x2="6" y2="12"/>
+          <line x1="14" y1="8" x2="17" y2="8"/>
+          <line x1="14" y1="12" x2="17" y2="12"/>
+        </g>
+      </symbol>
+      <symbol id="badge-s3" viewBox="0 0 428 512">
+        <path fill="#e25444" d="M378,99L295,257l83,158,34-19V118Z"/>
+        <path fill="#7b1d13" d="M378,99L212,118,127.5,257,212,396l166,19V99Z"/>
+        <path fill="#58150d" d="M43,99L16,111V403l27,12L212,257Z"/>
+        <path fill="#e25444" d="M42.637,98.667l169.587,47.111V372.444L42.637,415.111V98.667Z"/>
+        <path fill="#58150d" d="M212.313,170.667l-72.008-11.556,72.008-81.778,71.83,81.778Z"/>
+        <path fill="#58150d" d="M284.143,159.111l-71.919,11.733-71.919-11.733V77.333"/>
+        <path fill="#58150d" d="M212.313,342.222l-72.008,13.334,72.008,70.222,71.83-70.222Z"/>
+        <path fill="#7b1d13" d="M212,16L140,54V159l72.224-20.333Z"/>
+        <path fill="#7b1d13" d="M212.224,196.444l-71.919,7.823V309.105l71.919,8.228V196.444Z"/>
+        <path fill="#7b1d13" d="M212.224,373.333L140.305,355.3V458.363L212.224,496V373.333Z"/>
+        <path fill="#e25444" d="M284.143,355.3l-71.919,18.038V496l71.919-37.637V355.3Z"/>
+        <path fill="#e25444" d="M212.224,196.444l71.919,7.823V309.105l-71.919,8.228V196.444Z"/>
+        <path fill="#e25444" d="M212,16l72,38V159l-72-20V16Z"/>
+      </symbol>
+    </defs>
+
+    <rect x="0" y="0" width="1500" height="900" fill="#1a1a2e"/>
+
+    <!-- ===== Header ===== -->
+    <text x="750" y="30" text-anchor="middle" class="layer-label" fill="#f0f0f5" font-size="26">GROUP EMOTION RECOGNITION — SYSTEM ARCHITECTURE</text>
+
+    <!-- ===== Layer bands ===== -->
+    <rect x="20" y="65" width="460" height="780" rx="12" fill="#e94560" opacity="0.05" stroke="#e94560" stroke-opacity="0.35"/>
+    <rect x="480" y="65" width="620" height="780" rx="12" fill="#0f3460" opacity="0.22" stroke="#0f3460" stroke-opacity="0.8" stroke-width="2"/>
+    <rect x="1100" y="65" width="380" height="780" rx="12" fill="#533483" opacity="0.12" stroke="#533483" stroke-opacity="0.55"/>
+
+
+
+    <text x="40" y="98" class="layer-label" fill="#e94560">EDGE</text>
+    <use href="#badge-ec2" x="500" y="76" width="26" height="26"/>
+    <text x="534" y="95" class="layer-label" fill="#6fa8dc" font-size="17">CLOUD</text>
+    <text x="534" y="110" fill="#8fa8c8" font-size="10" class="mono">AWS EC2 g4dn.xlarge · NVIDIA Tesla T4 16GB</text>
+    <text x="1120" y="98" class="layer-label" fill="#b18cd9">CLIENT</text>
+
+    <!-- AWS Cognito — identity service, belongs to the cloud (AWS), independent of Tailscale -->
+    <g class="node" data-tip="AWS Cognito issues and validates identity tokens for the whole system — OAuth2 client-credentials (M2M) grants for Raspberry Pi nodes, and standard user-login tokens for the Flutter app. A managed AWS service: independent of the Tailscale network layer, which only handles transport.">
+      <rect x="790" y="72" width="130" height="36" rx="8" fill="#16213e" stroke="#0f3460" stroke-width="1.3"/>
+      <use href="#badge-cognito" x="797" y="80" width="18" height="18"/>
+      <text x="822" y="94" class="box-title" font-size="14">AWS Cognito</text>
+      <text x="865" y="104" text-anchor="middle" class="box-sub" font-size="10">M2M + user JWT</text>
+    </g>
+    <line x1="855" y1="108" x2="855" y2="166" class="arrow" marker-end="url(#arrow)"/>
+
+    <!-- S3 artefacts pill -->
+    <g class="node" data-tip="Training/eval scripts, FER+ dataset splits and fine-tuned model checkpoints (e.g. the Moondream2 weights) are pulled from AWS S3 onto the AWS EC2 instance.">
+      <rect x="936" y="76" width="144" height="28" rx="8" fill="#16213e" stroke="#0f3460" stroke-width="1.3"/>
+      <use href="#badge-s3" x="943" y="80" width="18" height="21"/>
+      <text x="966" y="94" font-size="11" fill="#cfd6e6">model artefacts → S3</text>
+    </g>
+
+    
+
+    <!-- ===================================================== -->
+    <!-- EDGE COLUMN -->
+    <!-- ===================================================== -->
+
+    <g class="node" data-tip="On boot, and periodically before the cached token expires, each Raspberry Pi node requests an OAuth2 client-credentials (machine-to-machine) token from its AWS Cognito app client — independent of the capture loop. The token is cached and attached as a Bearer header on every call to /emonodes/sendmessage; verify_node_token checks it locally against Cognito's JWKS, with no live round-trip per request.">
+      <rect x="40" y="205" width="260" height="87" rx="8" fill="#16213e" stroke="#FF9900" stroke-width="1.3" stroke-dasharray="5 3"/>
+      <use href="#badge-cognito" x="50" y="216" width="20" height="20"/>
+      <text x="78" y="230" class="box-title" font-size="15">Node Auth — AWS Cognito</text>
+      <text x="52" y="252" class="box-sub" font-size="12">OAuth2 client_credentials grant (M2M)</text>
+      <text x="52" y="268" class="box-sub" font-size="12">cached JWT → Bearer header on send</text>
+    </g>
+    <line x1="170" y1="292" x2="170" y2="312" class="arrow flow-normal" marker-end="url(#arrow)"/>
+
+    <g class="node" data-tip="Continuously captures video frames from the GoPro feed at the park observation point.">
+      <rect x="40" y="312" width="260" height="68" rx="8" fill="#16213e" stroke="#e94560" stroke-width="1.4"/>
+      <text x="170" y="338" text-anchor="middle" class="box-title" font-size="16">Raspberry Pi 5 + GoPro Camera</text>
+      <text x="170" y="358" text-anchor="middle" class="box-sub" font-size="13">continuous frame capture</text>
+    </g>
+    <line x1="170" y1="380" x2="170" y2="400" class="arrow flow-normal" marker-end="url(#arrow)"/>
+
+    <g class="node" data-tip="Runs entirely on-device with OpenCV's DNN module (SSD face detector). It only decides whether a frame is worth sending — the emotion model itself lives in the cloud.">
+      <rect x="40" y="400" width="260" height="102" rx="8" fill="#16213e" stroke="#e94560" stroke-width="1.4"/>
+      <text x="170" y="424" text-anchor="middle" class="box-title" font-size="16">OpenCV SSD Face Detector</text>
+      <text x="170" y="444" text-anchor="middle" class="box-sub" font-style="italic" font-size="13">detects WHEN to transmit —</text>
+      <text x="170" y="460" text-anchor="middle" class="box-sub" font-style="italic" font-size="13">no emotion inference on edge</text>
+    </g>
+    <line x1="170" y1="502" x2="170" y2="522" class="arrow flow-normal" marker-end="url(#arrow)"/>
+
+    <g class="node" data-tip="Rate-limited to one frame every 20 seconds per node, with an immediate override the moment a new person enters the frame.">
+      <rect x="40" y="522" width="260" height="76" rx="8" fill="#16213e" stroke="#e94560" stroke-width="1.4"/>
+      <text x="170" y="548" text-anchor="middle" class="box-title" font-size="16">Transmission Trigger</text>
+      <text x="170" y="568" text-anchor="middle" class="box-sub" font-size="13">every 20s, or instantly on new person</text>
+    </g>
+
+    <!-- ===================================================== -->
+    <!-- EDGE → CLOUD transport — direct, inside the shared       -->
+    <!-- private network boundary (no separate VPN node; see the -->
+    <!-- SAME PRIVATE NETWORK outline for the Tailscale mesh)     -->
+    <!-- ===================================================== -->
+
+    <path d="M300,524 L470,524 L470,148 L500,148" class="arrow flow-normal" marker-end="url(#arrow)"/>
+
+    <!-- ===================================================== -->
+    <!-- CLOUD COLUMN -->
+    <!-- ===================================================== -->
+
+    <rect x="500" y="130" width="580" height="420" rx="10" fill="#16213e" stroke="#0f3460" stroke-width="1.6"/>
+    <text x="516" y="152" class="box-title" font-size="16" fill="#9fc1ea">FastAPI · port 8080</text>
+    <line x1="510" y1="160" x2="1070" y2="160" stroke="#2a3a5c" stroke-width="1"/>
+
+    <g class="node" data-tip="verify_node_token validates the Raspberry Pi's JWT locally against AWS Cognito's JWKS (RS256, checks issuer + client_id) — no network round-trip per request. verify_app_token calls AWS Cognito's GetUser API to validate the Flutter app's user access token.">
+      <rect x="510" y="166" width="560" height="46" rx="6" fill="#101a30" stroke="#2a3a5c" stroke-width="1"/>
+      <text x="522" y="184" class="box-title mono" font-size="14.5">auth.py</text>
+      <use href="#badge-cognito" x="1040" y="171" width="18" height="18"/>
+      <text x="522" y="200" class="box-sub mono" font-size="12">verify_node_token — JWKS local  ·  verify_app_token — Cognito GetUser</text>
+    </g>
+
+    <!-- EP-A sendmessage -->
+    <g class="node flow-normal" data-tip="Raspberry Pi nodes call this endpoint. A detection row is inserted with emotion=NULL immediately, then the frame is base64-encoded and queued for the VLM at normal priority.">
+      <rect x="510" y="222" width="560" height="90" rx="6" fill="#101a30" stroke="#e94560" stroke-opacity="0.55" stroke-width="1.2"/>
+      <text x="522" y="242" class="box-title mono" font-size="15">POST /emonodes/sendmessage</text>
+      <text x="522" y="258" class="box-sub mono" font-size="12">caller: Raspberry Pi node  ·  auth: verify_node_token</text>
+      <text x="522" y="276" class="box-sub mono" font-size="12">save row (emotion = NULL) → base64 encode → predict_endpoint_one</text>
+      <text x="522" y="296" class="box-tag mono">normal priority queue</text>
+    </g>
+
+    <!-- EP-B analyzephoto -->
+    <g class="node flow-priority" data-tip="The Flutter app calls this for on-demand photo analysis. Jumps the queue ahead of Raspberry Pi frames — endpoint_two is serviced with a 3x weight over endpoint_one.">
+      <rect x="510" y="322" width="560" height="60" rx="6" fill="#101a30" stroke="#533483" stroke-opacity="0.7" stroke-width="1.2"/>
+      <text x="522" y="342" class="box-title mono" font-size="15">POST /app/analyzephoto</text>
+      <text x="522" y="358" class="box-sub mono" font-size="12">caller: Flutter app  ·  auth: verify_app_token</text>
+      <text x="522" y="374" class="box-tag mono">→ predict_endpoint_two  ·  high priority queue, weight = 3</text>
+    </g>
+
+    <!-- EP-C askagent -->
+    <g class="node" data-tip="Forwards the user's natural-language message to the Silvan agent, which builds a SQL query, runs it against MySQL, and returns a natural-language answer.">
+      <rect x="510" y="392" width="560" height="60" rx="6" fill="#101a30" stroke="#533483" stroke-opacity="0.7" stroke-width="1.2"/>
+      <text x="522" y="412" class="box-title mono" font-size="15">POST /app/askagent</text>
+      <text x="522" y="428" class="box-sub mono" font-size="12">caller: Flutter app  ·  auth: verify_app_token</text>
+      <text x="522" y="444" class="box-sub mono" font-size="12">→ Silvan Agent → llama3.2 (Ollama) → MySQL</text>
+    </g>
+
+    <!-- EP-D getbetweendates -->
+    <g class="node" data-tip="Runs a SQL query over the detections table for the given node and time range, then converts the raw emotion counts into percentages (8 classes, summing to ~100).">
+      <rect x="510" y="462" width="560" height="60" rx="6" fill="#101a30" stroke="#533483" stroke-opacity="0.7" stroke-width="1.2"/>
+      <text x="522" y="482" class="box-title mono" font-size="15">GET /app/data/getbetweendates</text>
+      <text x="522" y="498" class="box-sub mono" font-size="12">caller: Flutter app  ·  auth: verify_app_token</text>
+      <text x="522" y="514" class="box-sub mono" font-size="12">→ SQL query → MySQL → emotion percentages</text>
+    </g>
+
+    <!-- VLM/Agent queue arrows from endpoints — routed out through the left gutter (between the
+         edge band and the FastAPI box) and back in along the gap above VLM/Agent,
+         so they never cross over an unrelated endpoint row -->
+    <path d="M510,267 L494,267 L494,556 L600,556 L600,570" class="arrow normal flow-normal" marker-end="url(#arrow)"/>
+    <path d="M510,352 L491,352 L491,560 L720,560 L720,570" class="arrow priority flow-priority" stroke-dasharray="0.1 8" stroke-linecap="round" marker-end="url(#arrow)"/>
+    <path d="M510,422 L488,422 L488,564 L940,564 L940,570" class="arrow" marker-end="url(#arrow)"/>
+
+    <!-- EP-D to MySQL, routed around the right edge -->
+    <path d="M1070,492 L1090,492 L1090,785 L1080,785" class="arrow" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <text x="1094" y="640" class="arrow-label mono" font-size="11" transform="rotate(90 1094 640)" text-anchor="middle">SQL query / percentages</text>
+
+    <!-- VLM box -->
+    <rect x="500" y="570" width="280" height="160" rx="10" fill="#16213e" stroke="#0f3460" stroke-width="1.6"/>
+    <text x="640" y="592" text-anchor="middle" class="box-title" font-size="16" fill="#9fc1ea">VLM Priority Queue</text>
+
+    <g class="node flow-normal" data-tip="Frames from Raspberry Pi nodes. Serviced whenever the high-priority lane is empty, or once per 3 high-priority jobs when both are busy.">
+      <line x1="520" y1="612" x2="560" y2="612" class="arrow normal" marker-end="url(#arrow)"/>
+      <text x="566" y="616" class="box-sub mono" font-size="12">endpoint_one — normal</text>
+    </g>
+    <g class="node flow-priority" data-tip="Photos submitted live from the Flutter app. Configured with endpoint_two_priority_weight = 3, so 3 of these run for every 1 normal-priority job when the worker is backlogged.">
+      <line x1="520" y1="634" x2="560" y2="634" class="arrow priority" stroke-dasharray="0.1 8" stroke-linecap="round" marker-end="url(#arrow)"/>
+      <text x="566" y="638" class="box-sub mono" font-size="12">endpoint_two — priority ×3</text>
+    </g>
+
+    <line x1="640" y1="644" x2="640" y2="652" class="arrow" marker-end="url(#arrow)"/>
+    <g class="node" data-tip="Single fine-tuned vision-language model serving both queues on the AWS EC2 instance's NVIDIA Tesla T4 GPU. Fine-tuned for 1 epoch on a third of FER+ with the vision encoder frozen.">
+      <rect x="520" y="652" width="240" height="58" rx="6" fill="#101a30" stroke="#0f3460" stroke-width="1.2"/>
+      <text x="640" y="673" text-anchor="middle" class="box-title mono" font-size="14.5">Moondream2</text>
+      <text x="640" y="689" text-anchor="middle" class="box-sub mono" font-size="12">fine-tuned on FER+</text>
+      <text x="640" y="702" text-anchor="middle" fill="#ffd38c" font-size="12" text-anchor="middle" class="mono">82.2% accuracy</text>
+    </g>
+
+    <!-- Agent box -->
+    <rect x="800" y="570" width="280" height="160" rx="10" fill="#16213e" stroke="#0f3460" stroke-width="1.6"/>
+    <g class="node" data-tip="Silvan translates the user's natural-language question into a SQL query, runs it against MySQL, and turns the result back into a natural-language answer. Single message per request — no conversation history.">
+      <text x="940" y="592" text-anchor="middle" class="box-title" font-size="16" fill="#9fc1ea">Silvan Agent</text>
+      <text x="940" y="610" text-anchor="middle" class="box-sub mono" font-size="12">natural language → SQL</text>
+    </g>
+    <line x1="940" y1="616" x2="940" y2="630" class="arrow" marker-end="url(#arrow)"/>
+    <g class="node" data-tip="Local LLM runtime serving llama3.2 3B on the same GPU instance — no external LLM API calls.">
+      <rect x="820" y="630" width="240" height="58" rx="6" fill="#101a30" stroke="#0f3460" stroke-width="1.2"/>
+      <text x="940" y="655" text-anchor="middle" class="box-title mono" font-size="14.5">llama3.2 3B</text>
+      <text x="940" y="673" text-anchor="middle" class="box-sub mono" font-size="12">via Ollama</text>
+    </g>
+
+    <line x1="640" y1="710" x2="640" y2="750" class="arrow flow-normal flow-priority" marker-end="url(#arrow)"/>
+    <text x="648" y="745" class="arrow-label mono" font-size="11">read/write emotions</text>
+    <line x1="940" y1="688" x2="940" y2="750" class="arrow" marker-end="url(#arrow)"/>
+    <text x="948" y="745" class="arrow-label mono" font-size="11">SQL read/write</text>
+
+    <!-- MySQL box -->
+    <g class="node" data-tip="detections(id PK AUTOINCREMENT, node_name VARCHAR(50), num_persone INT, emotion VARCHAR(50) NULL, timestamp BIGINT). emotion starts NULL and is filled in once the VLM responds.">
+      <rect x="500" y="750" width="580" height="70" rx="10" fill="#16213e" stroke="#0f3460" stroke-width="1.6"/>
+      <text x="516" y="775" class="box-title mono" font-size="16" fill="#9fc1ea">MySQL · localhost:3306</text>
+      <text x="516" y="795" class="box-sub mono" font-size="12">detections — id, node_name, num_persone, emotion (nullable), timestamp</text>
+    </g>
+
+    <!-- ===================================================== -->
+    <!-- CLIENT COLUMN -->
+    <!-- ===================================================== -->
+
+    <g class="node" data-tip="Before calling any /app/* endpoint, the park-staff user signs in through AWS Cognito (Hosted UI or the Amplify/Cognito SDK). Cognito issues an ID token and an access token; the access token is sent as a Bearer header on every request and validated server-side by verify_app_token via Cognito's GetUser API.">
+      <rect x="1120" y="190" width="340" height="87" rx="8" fill="#16213e" stroke="#FF9900" stroke-width="1.3" stroke-dasharray="5 3"/>
+      <use href="#badge-cognito" x="1130" y="201" width="20" height="20"/>
+      <text x="1158" y="215" class="box-title" font-size="15">App Auth — AWS Cognito</text>
+      <text x="1132" y="237" class="box-sub" font-size="12">user sign-in (Hosted UI / SDK)</text>
+      <text x="1132" y="253" class="box-sub" font-size="12">ID + access JWT → Bearer header</text>
+    </g>
+    <line x1="1290" y1="277" x2="1290" y2="305" class="arrow" marker-end="url(#arrow)"/>
+
+    <rect x="1120" y="305" width="340" height="290" rx="10" fill="#16213e" stroke="#533483" stroke-width="1.6"/>
+    <g class="node" data-tip="Used by park staff to monitor group emotion at each observation node and chat with the Silvan agent. Reaches the AWS EC2 instance over the same Tailscale mesh as the Raspberry Pi nodes, then authenticates each request with an AWS Cognito user access token — two independent layers, not a chained dependency.">
+      <text x="1290" y="328" text-anchor="middle" class="box-title" font-size="16" fill="#cdb3ea">Flutter Mobile App</text>
+      <text x="1290" y="344" text-anchor="middle" class="box-sub" font-size="12">park-staff dashboard + chat</text>
+      <text x="1290" y="358" text-anchor="middle" class="box-sub" font-size="12">Tailscale + AWS Cognito JWT</text>
+    </g>
+    <line x1="1140" y1="366" x2="1440" y2="366" stroke="#3c2e5c" stroke-width="1"/>
+
+    <g class="node" data-tip="Polled by the dashboard to render the emotion-percentage breakdown for a node over a chosen time window.">
+      <rect x="1130" y="374" width="320" height="58" rx="6" fill="#101a30" stroke="#533483" stroke-opacity="0.6" stroke-width="1.1"/>
+      <text x="1142" y="394" class="box-title mono" font-size="14">GET /app/data/getbetweendates</text>
+      <text x="1142" y="410" class="box-sub mono" font-size="11">fetch emotion percentages</text>
+      <text x="1142" y="423" class="box-sub mono" font-size="11">for a node + date range</text>
+    </g>
+
+    <g class="node flow-priority" data-tip="Lets staff snap or upload a photo and get an immediate emotion read-out — served ahead of Raspberry Pi frames in the VLM queue.">
+      <rect x="1130" y="446" width="320" height="58" rx="6" fill="#101a30" stroke="#533483" stroke-opacity="0.6" stroke-width="1.1"/>
+      <text x="1142" y="466" class="box-title mono" font-size="14">POST /app/analyzephoto</text>
+      <text x="1142" y="482" class="box-sub mono" font-size="11">send photo →</text>
+      <text x="1142" y="495" class="box-sub mono" font-size="11">instant emotion classification</text>
+    </g>
+
+    <g class="node" data-tip="Free-text question box in the app, e.g. 'What emotions were detected on Tree1 this week?'.">
+      <rect x="1130" y="518" width="320" height="58" rx="6" fill="#101a30" stroke="#533483" stroke-opacity="0.6" stroke-width="1.1"/>
+      <text x="1142" y="538" class="box-title mono" font-size="14">POST /app/askagent</text>
+      <text x="1142" y="554" class="box-sub mono" font-size="11">ask a natural-language</text>
+      <text x="1142" y="567" class="box-sub mono" font-size="11">question about detections</text>
+    </g>
+
+    <!-- crossing arrows client <-> cloud -->
+    <path d="M1130,403 L1100,403 L1100,485 L1080,485" class="arrow" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <path d="M1130,475 L1108,475 L1108,358 L1080,358" class="arrow priority flow-priority" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+    <path d="M1130,547 L1116,547 L1116,428 L1080,428" class="arrow" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+
+    <!-- ===================================================== -->
+    <!-- Same-network boundary — everything inside this dashed   -->
+    <!-- line (edge nodes, EC2 cloud stack, Flutter app) sits on -->
+    <!-- one private Tailscale mesh. AWS Cognito and S3 stay     -->
+    <!-- outside: they are external managed AWS services.        -->
+    <!-- ===================================================== -->
+    <rect x="14" y="122" width="1474" height="723" rx="16" fill="none" stroke="#4ade80" stroke-width="2" stroke-dasharray="10 6" stroke-opacity="0.85"/>
+    <text x="34" y="145" class="layer-label" fill="#4ade80" font-size="15" letter-spacing="1.5">SAME PRIVATE NETWORK</text>
+    <text x="34" y="160" fill="#9aa3b2" font-size="11" font-style="italic">all infrastructures reachable via the Tailscale mesh</text>
+
+  </svg>
+
+  <div id="tooltip"></div>
+</div>
+
+<p id="caption">Hover any box for details · use the controls (top-right) to isolate the normal- or high-priority inference path</p>
+
+<script>
+  const svg = document.getElementById('diagram');
+  const tooltip = document.getElementById('tooltip');
+
+  svg.querySelectorAll('[data-tip]').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      tooltip.textContent = el.getAttribute('data-tip');
+      tooltip.classList.add('show');
+    });
+    el.addEventListener('mousemove', e => {
+      const pad = 16;
+      let x = e.clientX + pad, y = e.clientY + pad;
+      if (x + 300 > window.innerWidth) x = e.clientX - 300 - pad;
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    });
+    el.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+  });
+
+  const buttons = document.querySelectorAll('#controls button');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const mode = btn.getAttribute('data-flow');
+      const normalEls = svg.querySelectorAll('.flow-normal');
+      const priorityEls = svg.querySelectorAll('.flow-priority');
+      const allFlagged = svg.querySelectorAll('.flow-normal, .flow-priority');
+
+      allFlagged.forEach(el => el.classList.remove('flow-dim'));
+
+      if (mode === 'normal') {
+        priorityEls.forEach(el => { if (!el.classList.contains('flow-normal')) el.classList.add('flow-dim'); });
+      } else if (mode === 'priority') {
+        normalEls.forEach(el => { if (!el.classList.contains('flow-priority')) el.classList.add('flow-dim'); });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
