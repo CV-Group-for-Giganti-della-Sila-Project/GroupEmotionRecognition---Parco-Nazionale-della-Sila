@@ -12,11 +12,7 @@ The diagram is an interactive HTML file. GitHub does not render HTML files direc
 3. Press `Ctrl+S` (Windows/Linux) or `Cmd+S` (Mac) to save the file
 4. Open the saved file with any browser (Chrome, Firefox, Safari)
 
-### Option 2 — Use HTMLPreview (no download needed)
-Paste this link in your browser:
-https://htmlpreview.github.io/?https://github.com/giugiu39/GroupEmotionRecognition---Parco-Nazionale-della-Sila/blob/main/docs/architecture_diagram.html
-
-### Option 3 — Copy and paste
+### Option 2 — Copy and paste
 1. Click on `architecture_diagram.html`
 2. Click the **Raw** button
 3. Select all (`Ctrl+A` / `Cmd+A`), copy (`Ctrl+C` / `Cmd+C`)
