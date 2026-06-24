@@ -250,9 +250,9 @@ Authorization: Bearer <token>
 
 See the model-specific READMEs for full instructions:
 
-- **PaliGemma 2:** [`root/VLM/Paligemma2/README.md`](root/VLM/Paligemma2/README.md)
+- **PaliGemma 2:** [`root/VLM/Paligemma 2/README.md`](root/VLM/Paligemma%202/README.md)
 - **MiniCPM-V:** [`root/VLM/MiniCPM-V/README.md`](root/VLM/MiniCPM-V/README.md)
-- **Moondream2:** [`root/VLM/Moondream2/README.md`](root/VLM/Moondream2/README.md)
+- **Moondream2:** [`root/VLM/Moondream 2/README.md`](root/VLM/Moondream%202/README.md)
 - **Backend:** [`root/Backend/README.md`](root/Backend/README.md) — runs on port `8080`
 
 On startup FastAPI automatically:
