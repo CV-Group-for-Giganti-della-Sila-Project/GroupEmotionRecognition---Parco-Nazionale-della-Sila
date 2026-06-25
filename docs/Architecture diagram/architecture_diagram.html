@@ -305,6 +305,14 @@
       <text x="522" y="514" class="box-sub mono" font-size="12">→ SQL query → MySQL → emotion percentages</text>
     </g>
 
+    <!-- MQTT publish — FastAPI → Digital Twin broker (Eclipse Ditto) -->
+    <g class="node" data-tip="FastAPI publishes an emotion-detection event to the Eclipse Ditto-compatible MQTT broker after each inference result is stored — keeps the park digital twin in sync.">
+      <line x1="520" y1="537" x2="622" y2="537" class="arrow normal" marker-end="url(#arrow)"/>
+      <rect x="624" y="524" width="260" height="26" rx="4" fill="#101a30" stroke="#0f3460" stroke-width="1.3"/>
+      <text x="754" y="535" text-anchor="middle" class="box-tag mono" font-size="11">MQTT publish</text>
+      <text x="754" y="548" text-anchor="middle" class="box-sub mono" font-size="10">Digital Twin broker</text>
+    </g>
+
     <!-- VLM/Agent queue arrows from endpoints — routed out through the left gutter (between the
          edge band and the FastAPI box) and back in along the gap above VLM/Agent,
          so they never cross over an unrelated endpoint row -->
