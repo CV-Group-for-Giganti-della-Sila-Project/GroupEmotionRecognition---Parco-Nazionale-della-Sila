@@ -11,6 +11,7 @@ from database import get_db
 from models import Detection
 from model_queue_service import predict_endpoint_one
 from auth import verify_node_token
+from services.MQTTService import publisher
 
 router = APIRouter(prefix="/emonodes", tags=["emonodes"])
 
@@ -26,7 +27,6 @@ async def send_message(
     timestamp: int = Form(...),
     _token: dict = Depends(verify_node_token),
 ) -> Response:
-    """Receive a frame from a Raspberry Pi node, store it, and update it with the VLM emotion result."""
     image_bytes = await foto.read()
 
     detection = Detection(
@@ -46,5 +46,9 @@ async def send_message(
     if emotion is not None:
         detection.emotion = emotion
         await db.commit()
+        try:
+            publisher.publish(node_name, num_persone, emotion, timestamp)
+        except Exception as e:
+            print(f"MQTT publish failed: {e}")
 
     return Response(status_code=200)

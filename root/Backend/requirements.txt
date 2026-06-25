@@ -11,3 +11,4 @@ PyJWT[crypto]
 requests
 langchain-ollama
 mysql-connector-python
+paho-mqtt
