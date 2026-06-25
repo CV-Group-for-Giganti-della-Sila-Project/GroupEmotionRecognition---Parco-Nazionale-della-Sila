@@ -1,0 +1,13 @@
+# Edge Node — Raspberry Pi 5 + GoPro
+# Python dependencies for edge_node_dnn.py
+#
+# Install with:
+#   pip install -r requirements.txt --break-system-packages
+#
+# Note: cv2, numpy, and requests are the only third-party packages.
+# (os, time, datetime are part of the Python standard library and
+#  do not need to be installed.)
+
+opencv-python>=4.5
+numpy>=1.21
+requests>=2.25

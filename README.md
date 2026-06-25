@@ -7,60 +7,64 @@ University of Calabria (UNICAL) — A.Y. 2025/2026
 
 ## Project Overview
 
-The system captures facial images from visitor groups at Parco Nazionale della Sila using a Raspberry Pi 4 edge device and classifies the group emotion in real-time through a cloud inference pipeline powered by Vision-Language Models (VLMs). Classified emotions are persisted to MySQL and surfaced through a Flutter mobile application used by park staff.
+The system captures facial images from visitor groups at Parco Nazionale della Sila using a Raspberry Pi 5 edge device and classifies the group emotion in real-time through a cloud inference pipeline powered by Vision-Language Models (VLMs). Classified emotions are persisted to MySQL and surfaced through a Flutter mobile application used by park staff.
 
 ---
 
 ## System Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│  EDGE                                                                                │
-│                                                                                      │
-│  ┌───────────────────────────────────────┐                                           │
-│  │  Raspberry Pi 4                       │                                           │
-│  │  USB camera (capture + compress)      │                                           │
-│  └───────────────────────────────────────┘                                           │
-└──────────────────────────────────────────────────────────────────────────────────────┘
-        │  JPEG frame (HTTPS POST) + Cognito M2M token           ▲  200 OK
-        ▼                                                        │
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│  CLOUD (AWS eu-west-1)                                                               │
-│                                                                                      │
-│  ┌─────────────────────────────────────────────────────────────────────────────┐     │
-│  │  EC2 g4dn.xlarge (NVIDIA Tesla T4) — reachable via Tailscale VPN            │     │
-│  │                                                                             │     │
-│  │  ┌───────────────────────┐    queue (normal)    ┌──────────────────────┐    │     │
-│  │  │  FastAPI (port 8080)  │─────────────────────►│  VLM Moondream       │    │     │
-│  │  │                       │◄──── emotion ─────── │  (predict_endpoint_  │    │     │
-│  │  │                       │                      │   one / two)         │    │     │
-│  │  │                       │    queue (priority)  └──────────────────────┘    │     │
-│  │  │                       │─────────────────────►  (app photo analysis)      │     │
-│  │  │                       │                                                  │     │
-│  │  │                       │─── forward message ─►┌──────────────────────┐    │     │
-│  │  │                       │◄─── NL response ──── │  AI Agent            │    │     │
-│  │  │                       │                      │  (Silvan + llama3.2) │    │     │
-│  │  └──────────┬────────────┘                      └──────────┬───────────┘    │     │
-│  │             │ save result                                  │ SQL queries    │     │
-│  │             └──────────────────┐  ┌────────────────────────┘                │     │
-│  │                                ▼  ▼                                         │     │
-│  │                   ┌──────────────────────────┐                              │     │
-│  │                   │  MySQL (localhost:3306)  │                              │     │
-│  │                   └──────────────────────────┘                              │     │
-│  │                                                                             │     │
-│  │  EC2 ── pulls scripts, datasets, model artefacts ──► S3                     │     │
-│  └─────────────────────────────────────────────────────────────────────────────┘     │
-└──────────────────────────────────────────────────────────────────────────────────────┘
-        │  data + agent replies                         ▲  queries + chat + photos
-        ▼                                               │
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│  CLIENT                                                                              │
-│                                                                                      │
-│  ┌───────────────────────────────────────┐                                           │
-│  │  Flutter Mobile App                   │                                           │
-│  │  (group emotion dashboard + chat)     │                                           │
-│  └───────────────────────────────────────┘                                           │
-└──────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│  TAILSCALE VPN — private mesh network                                                   │
+│                                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │  EDGE                                                                            │   │
+│  │                                                                                  │   │
+│  │  ┌───────────────────────────────────────┐                                       │   │
+│  │  │  Raspberry Pi 5                       │                                       │   │
+│  │  │  GoPro camera    (capture + compress) │                                       │   │
+│  │  └───────────────────────────────────────┘                                       │   │
+│  └──────────────────────────────────────────────────────────────────────────────────┘   │
+│          │  JPEG frame (HTTPS POST) + Cognito M2M token           ▲  200 OK             │
+│          ▼                                                        │                     │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │  CLOUD (AWS eu-west-1)                                                           │   │
+│  │                                                                                  │   │
+│  │  ┌───────────────────────────────────────────────────────────────────────────┐   │   │
+│  │  │  EC2 g4dn.xlarge (NVIDIA Tesla T4) — reachable via Tailscale VPN          │   │   │
+│  │  │                                                                           │   │   │
+│  │  │  ┌───────────────────────┐    queue (normal)    ┌──────────────────────┐  │   │   │
+│  │  │  │  FastAPI (port 8080)  │─────────────────────►│  VLM Moondream       │  │   │   │
+│  │  │  │                       │◄──── emotion ─────── │  (predict_endpoint_  │  │   │   │
+│  │  │  │                       │                      │   one / two)         │  │   │   │
+│  │  │  │                       │    queue (priority)  └──────────────────────┘  │   │   │
+│  │  │  │                       │─────────────────────►  (app photo analysis)    │   │   │
+│  │  │  │                       │                                                │   │   │
+│  │  │  │                       │─── forward message ─►┌──────────────────────┐  │   │   │
+│  │  │  │                       │◄─── NL response ──── │  AI Agent            │  │   │   │
+│  │  │  │                       │                      │  (Silvan + llama3.2) │  │   │   │
+│  │  │  └──────────┬────────────┘                      └──────────┬───────────┘  │   │   │
+│  │  │             │ save result                                  │ SQL queries  │   │   │
+│  │  │             └──────────────────┐  ┌────────────────────────┘              │   │   │
+│  │  │                                ▼  ▼                                       │   │   │
+│  │  │                   ┌──────────────────────────┐                            │   │   │
+│  │  │                   │  MySQL (localhost:3306)  │                            │   │   │
+│  │  │                   └──────────────────────────┘                            │   │   │
+│  │  │                                                                           │   │   │
+│  │  │  EC2 ── pulls scripts, datasets, model artefacts ──► S3                   │   │   │
+│  │  └───────────────────────────────────────────────────────────────────────────┘   │   │
+│  └──────────────────────────────────────────────────────────────────────────────────┘   │
+│          │  data + agent replies                         ▲  queries + chat + photos     │
+│          ▼                                               │  + Cognito User JWT          │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │  CLIENT                                                                          │   │
+│  │                                                                                  │   │
+│  │  ┌───────────────────────────────────────┐                                       │   │
+│  │  │  Flutter Mobile App                   │                                       │   │
+│  │  │  (group emotion dashboard + chat)     │                                       │   │
+│  │  └───────────────────────────────────────┘                                       │   │
+│  └──────────────────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -79,8 +83,10 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 ## Repository structure
 
 ```
-├── docs/                          # Project report and documentation
-│   └── GER_Report_final.docx
+├── docs/                          # Project report and documentation + .html
+│   ├── GER_Report_final.docx
+|   └── Architecture diagram/
+|       ├── architecture_diagram.html
 └── root/
     ├── Backend/                   # FastAPI backend (EC2)
     │   ├── main.py
@@ -98,18 +104,13 @@ The system captures facial images from visitor groups at Parco Nazionale della S
     │   │   ├── agent.py           # AI Agent integration
     │   │   └── vlm.py             # VLM queue integration
     │   └── Silvan_Agent/          # AI Agent (text-to-SQL, Ollama)
-    ├── Edge/                      # Raspberry Pi 4 capture script
+    ├── Edge/                      # Raspberry Pi 5 capture script
     ├── Frontend/                  # Flutter mobile app
     └── VLM/
         ├── Dataset/               # FER+ JSONL builders and dataset split files
-        ├── Paligemma 2/           # PaliGemma 2 3B — fine-tuning & evaluation & queue service (imported from Moondream 2)
-        ├── MiniCPM-V/             # MiniCPM-V — fine-tuning & evaluation
-        └── Moondream 2/           # Moondream2 — fine-tuning, evaluation & queue service
-            ├── finetune.py
-            ├── evaluate_VLM.py
-            ├── folder_evaluation.py
-            ├── model_queue_service.py
-            └── sumarize_predictions.py
+        ├── Paligemma 2/           # PaliGemma 2 3B — fine-tuning & evaluation + project scripts
+        ├── MiniCPM-V/             # MiniCPM-V — fine-tuning & evaluation + project scripts
+        └── Moondream 2/           # Moondream2 — fine-tuning & evaluation + project scripts
 ```
 ---
 
@@ -255,9 +256,9 @@ Authorization: Bearer <token>
 
 See the model-specific READMEs for full instructions:
 
-- **PaliGemma 2:** [`vlm/paligemma2/README.md`](vlm/paligemma2/README.md)
-- **MiniCPM-V:** `vlm/minicpmv/`
-- **Moondream2:** `vlm/moondream2/`
+- **PaliGemma 2:** [`root/VLM/Paligemma 2/README.md`](root/VLM/Paligemma%202/README.md)
+- **MiniCPM-V:** [`root/VLM/MiniCPM-V/README.md`](root/VLM/MiniCPM-V/README.md)
+- **Moondream2:** [`root/VLM/Moondream 2/README.md`](root/VLM/Moondream%202/README.md)
 - **Backend:** [`root/Backend/README.md`](root/Backend/README.md) — runs on port `8080`
 
 On startup FastAPI automatically:
@@ -266,7 +267,7 @@ On startup FastAPI automatically:
 - Warms up the AI agent (Ollama) with a dummy request
 - Prints `VLM model service ready.` and `AI agent ready.` when both are operational
 
-For dataset preparation: [`dataset/`](dataset/)
+For dataset preparation: [`root/VLM/Dataset/`](root/VLM/Dataset/)
 
 ---
 

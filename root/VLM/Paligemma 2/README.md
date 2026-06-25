@@ -100,6 +100,27 @@ Key observations from the 8-class confusion matrix:
 
 ---
 
+## Qualitative Evaluation
+
+Evaluation done on the sample images in the `img/` folder using the base model with simple prompt.
+
+| Image | PaliGemma 2 | Image | PaliGemma 2 |
+|-------|-------------|-------|-------------|
+| 1.jpg | happiness | 11.jpg | neutral |
+| 2.jpg | happiness | 12.jpg | happiness |
+| 3.jpg | happiness | 13.jpg | happiness |
+| 4.jpg | surprise | 14.jpg | surprise |
+| 5.png | surprise | 15.jpg | happiness |
+| 6.jpeg | happiness | 16.jpg | surprise |
+| 7.png | neutral | 17.jpg | neutral |
+| 8.png | happiness | 18.jpg | surprise |
+| 9.png | surprise | 19.jpg | happiness |
+| 10.jpg | happiness | 20.jpeg | surprise |
+
+**Agreement with Moondream2 (Marco): 13/20 = 65%**
+
+Disagreements are mainly on images where Moondream2 predicts `neutral` while PaliGemma 2 predicts `surprise` or `happiness` — consistent with the FER+ evaluation results, where PaliGemma 2 tends to overestimate surprise and happiness relative to neutral.
+
 ## Scripts
 
 | Script | Purpose |
@@ -115,10 +136,10 @@ All evaluation scripts support checkpoint/resume: if interrupted, re-running wit
 
 ## How to Run
 
-### Prerequisites
+## Prerequisites
 
 ```bash
-pip install torch transformers peft bitsandbytes pillow tqdm
+pip install -r requirements.txt
 ```
 
 Requires a CUDA GPU with at least 4 GB VRAM (2.3 GB used in practice at 4-bit).
