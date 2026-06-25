@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<applications>
+    <application name="PARK_FRAME_VLM">
+        <usage_percentage>100</usage_percentage>
+
+        <prob_cloud_selection>0</prob_cloud_selection>
+
+        <poisson_interarrival>20</poisson_interarrival>
+
+        <delay_sensitivity>1</delay_sensitivity>
+
+        <active_period>3600</active_period>
+        <idle_period>0</idle_period>
+
+        <data_upload>512</data_upload>
+
+        <data_download>5</data_download>
+
+        <task_length>200000</task_length>
+
+        <required_core>1</required_core>
+
+        <vm_utilization_on_edge>80</vm_utilization_on_edge>
+        <vm_utilization_on_cloud>0</vm_utilization_on_cloud>
+        <vm_utilization_on_mobile>0</vm_utilization_on_mobile>
+    </application>
+</applications>
