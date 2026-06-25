@@ -36,6 +36,13 @@ async def startup():
         from silvan_agent import handle_request
         await asyncio.to_thread(handle_request, {"question": "warmup"})
         print("AI agent ready.")
+        from services.MQTTService import publisher as mqtt_publisher
+        mqtt_publisher.set_info(
+            os.getenv("MQTT_HOST", "test.mosquitto.org"),
+            int(os.getenv("MQTT_PORT", "1883")),
+            os.getenv("MQTT_TOPIC", "smartpark/telemetry/GSP-EG5120-01"),
+        )
+        print("MQTT publisher configured.")
     except Exception:
         print("AI agent warmup failed - will retry on first request.")
 
