@@ -249,9 +249,10 @@ See the model-specific READMEs for full instructions:
 
 On startup FastAPI automatically:
 
-- Loads the VLM Moondream model into memory
-- Warms up the AI agent (Ollama) with a dummy request
-- Prints `VLM model service ready.` and `AI agent ready.` when both are operational
+- Loads the VLM Moondream2 model into GPU memory and starts the priority-queue worker
+- Warms up the AI agent (Ollama) with a dummy request to pre-load llama3.2
+- Configures the MQTT publisher with broker host, port and topic from `.env`
+- Prints `VLM model service ready.`, `AI agent ready.` and `MQTT publisher configured.` when all three are operational
 
 For dataset preparation: [`root/VLM/Dataset/`](root/VLM/Dataset/)
 
