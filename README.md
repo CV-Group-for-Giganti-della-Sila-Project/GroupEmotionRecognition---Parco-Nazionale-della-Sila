@@ -136,8 +136,8 @@ JSONL files in `dataset/` map each image path (as it appears on the EC2 instance
 | Model | Strategy | Accuracy | Macro F1 | Invalid % |
 |-------|----------|----------|----------|-----------|
 | **PaliGemma 2 3B** | Base (no fine-tuning) + simple prompt | **0.691** | **0.436** | **0.00%** |
-| **Moondream2** | Fine-tuning (1 epoch, 1/3 data, frozen vision encoder) | **0.822** | — | **0.00%** |
-| MiniCPM-V 2.6 | QLoRA fine-tuning (1 epoch, 1/3 data) | — | — | — |
+| **Moondream2** | QLoRA fine-tuning (1 epoch, 1/3 data, frozen vision encoder) | **0.822** | **0.632** | **0.00%** |
+| **MiniCPM-V 4.6** | QLoRA fine-tuning (1 epoch, 1/3 data, FP32 adapter) | **0.748** | **0.567** | **0.00%** |
 
 ### PaliGemma 2 — 4-Class Distress Evaluation
 
