@@ -22,7 +22,8 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 │  │                                                                                  │   │
 │  │  ┌───────────────────────────────────────┐                                       │   │
 │  │  │  Raspberry Pi 5                       │                                       │   │
-│  │  │  GoPro camera    (capture + compress) │                                       │   │
+│  │  │  GoPro camera    (capture + compress) │                                       │   │ 
+│  │  │  OpenCV DNN SSD                       │                                       │   │
 │  │  └───────────────────────────────────────┘                                       │   │
 │  └──────────────────────────────────────────────────────────────────────────────────┘   │
 │          │  JPEG frame (HTTPS POST) + Cognito M2M token           ▲  200 OK             │
@@ -89,21 +90,6 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 |       ├── architecture_diagram.html
 └── root/
     ├── Backend/                   # FastAPI backend (EC2)
-    │   ├── main.py
-    │   ├── database.py
-    │   ├── models.py
-    │   ├── schemas.py
-    │   ├── auth.py
-    │   ├── predict_folder.py      # VLM helper module
-    │   ├── requirements.txt
-    │   ├── .env.example
-    │   ├── routers/
-    │   │   ├── app_routes.py
-    │   │   └── emonodes.py
-    │   ├── services/
-    │   │   ├── agent.py           # AI Agent integration
-    │   │   └── vlm.py             # VLM queue integration
-    │   └── Silvan_Agent/          # AI Agent (text-to-SQL, Ollama)
     ├── Edge/                      # Raspberry Pi 5 capture script
     ├── Frontend/                  # Flutter mobile app
     └── VLM/
@@ -135,9 +121,9 @@ JSONL files in `dataset/` map each image path (as it appears on the EC2 instance
 
 | Model | Strategy | Accuracy | Macro F1 | Invalid % |
 |-------|----------|----------|----------|-----------|
-| **PaliGemma 2 3B** | Base (no fine-tuning) + simple prompt | **0.691** | **0.436** | **0.00%** |
-| **Moondream2** | QLoRA fine-tuning (1 epoch, 1/3 data, frozen vision encoder) | **0.822** | **0.632** | **0.00%** |
-| **MiniCPM-V 4.6** | QLoRA fine-tuning (1 epoch, 1/3 data, FP32 adapter) | **0.748** | **0.567** | **0.00%** |
+| **PaliGemma 2 3B** | Base (no fine-tuning) + simple prompt | 0.691 | 0.436 | 0.00% |
+| **Moondream2** | QLoRA fine-tuning (1 epoch, 1/3 data, frozen vision encoder) | **0.822** | 0.632 | 0.00% |
+| **MiniCPM-V 4.6** | QLoRA fine-tuning (1 epoch, 1/3 data, FP32 adapter) | 0.748 | 0.567 | 0.00% |
 
 ### PaliGemma 2 — 4-Class Distress Evaluation
 
@@ -156,22 +142,22 @@ Grouping sadness / anger / disgust / fear / contempt into a single `distress` cl
 | distress | 0.621 |
 | surprise | 0.598 |
 
-### Moondream2 — Per-Class Accuracy (8 classes, after fine-tuning)
+### Moondream2 — Per-Class F1 (8 classes, after fine-tuning)
 
 Config: 1 epoch, 1/3 sample fraction, learning rate 1e-5. Vision encoder frozen, text model fine-tuned.
 
-| Emotion | Accuracy | Comment |
-|---------|----------|---------|
-| happiness | 91.82% | Excellent |
-| neutral | 88.15% | Excellent |
-| surprise | 84.89% | Good |
-| anger | 81.68% | Good |
-| sadness | 60.36% | Moderate |
-| disgust | 33.33% | Weak |
-| fear | 29.59% | Weak |
-| contempt | 26.67% | Very weak |
+| Emotion | F1 | Comment |
+|---------|-----|---------|
+| happiness | 92.02% | Excellent |
+| neutral | 85.86% | Excellent |
+| surprise | 81.19% | Good |
+| anger | 77.58% | Good |
+| sadness | 66.50% | Moderate |
+| disgust | 28.57% | Weak |
+| fear | 39.46% | Weak |
+| contempt | 34.78% | Very weak |
 
-### MiniCPM-V 2.6 — Per-Class F1 (8 classes, after QLoRA fine-tuning)
+### MiniCPM-V 4.6 — Per-Class F1 (8 classes, after QLoRA fine-tuning)
 
 | Emotion | F1 | Comment |
 |---------|----|---------|
