@@ -232,7 +232,7 @@ Authorization: Bearer <token>
 | Database | MySQL (on EC2, localhost:3306) |
 | Connectivity | Tailscale VPN (replaces API Gateway) |
 | Auth | AWS Cognito (User Pool + M2M Client Credentials) |
-| Backend | FastAPI (on EC2, localhost:8080) |
+| Backend | FastAPI (port 8080) |
 | VLM | Moondream2 fine-tuned (two priority queues) |
 | AI Agent | Silvan + llama3.2 via Ollama |
 | Region | `eu-west-1` |
@@ -264,4 +264,4 @@ For dataset preparation: [`root/VLM/Dataset/`](root/VLM/Dataset/)
 - **University:** University of Calabria (UNICAL)
 - **Courses:** IoT Device Programming + Distributed Systems, Cloud and Edge Computing
 - **Academic Year:** 2025/2026
-- **Report:** [`docs/GER_Report_final.docx`](docs/GER_Report_final.docx)
+- **Report:** [`docs/Group Emotion Recognition System for Smart Park Monitoring.docx`](docs/Group Emotion Recognition System for Smart Park Monitoring.docx)
