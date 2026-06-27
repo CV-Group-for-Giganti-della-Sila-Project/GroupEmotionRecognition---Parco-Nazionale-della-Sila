@@ -91,7 +91,8 @@ The system captures facial images from visitor groups at Parco Nazionale della S
 └── root/
     ├── Backend/                   # FastAPI backend (EC2)
     ├── Edge/                      # Raspberry Pi 5 capture script
-    ├── Frontend/                  # Flutter mobile app
+    ├── EdgeCloudSim/  
+    ├── MobileApp/                  
     └── VLM/
         ├── Dataset/               # FER+ JSONL builders and dataset split files
         ├── Paligemma 2/           # PaliGemma 2 3B — fine-tuning & evaluation + project scripts
@@ -231,7 +232,7 @@ Authorization: Bearer <token>
 | Database | MySQL (on EC2, localhost:3306) |
 | Connectivity | Tailscale VPN (replaces API Gateway) |
 | Auth | AWS Cognito (User Pool + M2M Client Credentials) |
-| Backend | FastAPI (port 8080) |
+| Backend | FastAPI (on EC2, localhost:8080) |
 | VLM | Moondream2 fine-tuned (two priority queues) |
 | AI Agent | Silvan + llama3.2 via Ollama |
 | Region | `eu-west-1` |
@@ -243,7 +244,7 @@ Authorization: Bearer <token>
 See the model-specific READMEs for full instructions:
 
 - **PaliGemma 2:** [`root/VLM/Paligemma 2/README.md`](root/VLM/Paligemma%202/README.md)
-- **MiniCPM-V:** [`root/VLM/MiniCPM-V/README.md`](root/VLM/MiniCPM-V/README.md)
+- **MiniCPM-V:** [`root/VLM/MiniCPM-V/MiniCPM-V_readme.md`](root/VLM/MiniCPM-V/MiniCPM-V_readme.md)
 - **Moondream2:** [`root/VLM/Moondream 2/README.md`](root/VLM/Moondream%202/README.md)
 - **Backend:** [`root/Backend/README.md`](root/Backend/README.md) — runs on port `8080`
 
