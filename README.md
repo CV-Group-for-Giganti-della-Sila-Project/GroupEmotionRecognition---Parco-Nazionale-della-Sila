@@ -264,4 +264,4 @@ For dataset preparation: [`root/VLM/Dataset/`](root/VLM/Dataset/)
 - **University:** University of Calabria (UNICAL)
 - **Courses:** IoT Device Programming + Distributed Systems, Cloud and Edge Computing
 - **Academic Year:** 2025/2026
-- **Report:** [`docs/Group Emotion Recognition System for Smart Park Monitoring.docx`](docs/Group Emotion Recognition System for Smart Park Monitoring.docx)
+- **Report:** [`docs/Group Emotion Recognition System for Smart Park Monitoring.docx`](docs/Group%20Emotion%20Recognition%20System%20for%20Smart%20Park%20Monitoring.docx)
