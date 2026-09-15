@@ -9,7 +9,8 @@ class AuthService {
   AuthService._internal();
 
   static const String _endpoint = 'https://cognito-idp.eu-west-1.amazonaws.com/';
-  static const String _clientId = '***REMOVED_COGNITO_CLIENT_ID***';
+  // Passa il valore reale con: flutter build/run --dart-define=COGNITO_CLIENT_ID=xxxx
+  static const String _clientId = String.fromEnvironment('COGNITO_CLIENT_ID');
 
   final _storage = const FlutterSecureStorage();
 
